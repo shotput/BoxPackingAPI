@@ -254,6 +254,28 @@ def best_fit(sku_dims, box_dims):
                                   key=lambda block: volume(block))
     return remaining_dimensions
 
+def insert_skus_into_dimensions(remaining_dimensions, skus_to_pack, skus_packed):
+    for block in remaining_dimensions:
+        for sku in skus_to_pack:
+            if does_it_fit(sku.dimensions, block):
+                # if the sku fits, pack it, remove it from the skus to pack
+                skus_packed[-1].append(sku.sku_number)
+                skus_to_pack.remove(sku)
+                # find the remaining dimensions in the box after packing
+                left_over_dimensions = best_fit(sku.dimensions, block)
+                for left_over_block in left_over_dimensions:
+                    # only append left over block if at least one sku fits
+                    if (len(skus_to_pack) > 0 and
+                            something_fits(skus_to_pack,
+                                           left_over_block)):
+                        remaining_dimensions.append(left_over_block)
+                # if a sku fits, remaining dimensions will have changed
+                # break out of look
+                break
+        # remove the block from that remaining dimensions
+        remaining_dimensions.remove(block)
+    return remaining_dimensions
+
 
 def pack_boxes(box_dimensions, skus_to_pack):
     '''
@@ -268,16 +290,13 @@ def pack_boxes(box_dimensions, skus_to_pack):
     After there are no more skus needing to be packed, returns a list lists of
         the skus in there 'boxes' (first box is first nested list, second is
         the second, etc.)
-
     Args:
         box_dimensions (List[int, int, int]): sorted list of box dimensions
         skus_to_pack (List[SkuTuple]): list of skus to pack as SkuTuples
             sorted by longest dimension
-
     returns:
         List[List[SimpleSku]]: list of lists including the skus in the
             number of boxes the are arranged into
-
     example:
     >>> pack_boxes([5,5,10], [[sku1, [5,5,10]], sku2, [5,5,6],
                    [sku3, [5,5,4]])
@@ -298,25 +317,9 @@ def pack_boxes(box_dimensions, skus_to_pack):
             remaining_dimensions = [box_dimensions]
             skus_packed.append([])
         # iterate through remaining dimensions to pack boxes
-        for block in remaining_dimensions:
-            for sku in skus_to_pack_copy:
-                if does_it_fit(sku.dimensions, block):
-                    # if the sku fits, pack it, remove it from the skus to pack
-                    skus_packed[-1].append(sku.sku_number)
-                    skus_to_pack_copy.remove(sku)
-                    # find the remaining dimensions in the box after packing
-                    left_over_dimensions = best_fit(sku.dimensions, block)
-                    for left_over_block in left_over_dimensions:
-                        # only append left over block if at least one sku fits
-                        if (len(skus_to_pack_copy) > 0 and
-                                something_fits(skus_to_pack_copy,
-                                               left_over_block)):
-                            remaining_dimensions.append(left_over_block)
-                    # if a sku fits, remaining dimensions will have changed
-                    # break out of loop
-                    break
-            # remove the block from that remaining dimensions
-            remaining_dimensions.remove(block)
+        remaining_dimensions = insert_skus_into_dimensions(remaining_dimensions,
+                                                           skus_to_pack_copy,
+                                                           skus_packed)
     return skus_packed
 
 

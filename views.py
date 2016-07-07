@@ -1,4 +1,5 @@
-from .helper import compare_1000_times, api_packing_algorithm
+from .helper import (compare_1000_times, api_packing_algorithm,
+    space_after_packing, how_many_skus_fit)
 from flask import Blueprint, request, jsonify, current_app
 
 from ..authentication.login_required import (login_required,
@@ -6,6 +7,27 @@ from ..authentication.login_required import (login_required,
 from ..crossdomain import crossdomain
 
 blueprint = Blueprint('shipments', __name__)
+
+
+@blueprint.route('/pack_boxes/remaining_volume', methods=['POST', 'OPTIONS'])
+@crossdomain(api=True)
+@login_required
+def get_space_after_packing():
+    json_data = request.get_json(force=True)
+    sku_info = json_data['sku_info']
+    box_info = json_data['box_info']
+    return jsonify(space_after_packing(sku_info, box_info))
+
+
+@blueprint.route('/pack_boxes/how_many_fit', methods=['POST', 'OPTIONS'])
+@crossdomain(api=True)
+@login_required
+def how_many_fit():
+    json_data = request.get_json(force=True)
+    sku_info = json_data['sku_info']
+    box_info = json_data['box_info']
+    return jsonify(how_many_skus_fit(sku_info, box_info))
+
 
 @blueprint.route('/compare_packing_efficiency', methods=['GET', 'OPTIONS'])
 @crossdomain(api=True)

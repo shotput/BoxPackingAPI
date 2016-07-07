@@ -4,11 +4,71 @@ from fulfillment_api.authentication.shipping_box import ShippingBox
 from fulfillment_api.constants import usps_shipping
 
 from .packing_algorithm import (packing_algorithm, does_it_fit, SkuTuple,
-                                volume, pack_boxes)
+                                volume, pack_boxes, best_fit)
 
 from itertools import izip
 import math
 from sqlalchemy import or_
+
+
+def space_after_packing(sku_info, box_info):
+    '''
+    returns the remaining space in a box after packing a sku and
+        the remaining block sizes within the box after an ideal fit
+    assumes sku and box dimensions are on in the same units
+    '''
+
+    sku_dims = sorted([sku_info['width'], sku_info['height'],
+                       sku_info['length']])
+    box_dims = sorted([box_info['width'], box_info['height'],
+                       box_info['length']])
+
+    if does_it_fit(sku_dims, box_dims):
+        remaining_dimensions = best_fit(sku_dims, box_dims)
+        blocks = [{
+            "width": block[0],
+            "height": block[1],
+            "length": block[2]
+        } for block in remaining_dimensions]
+        remaining_volume = sum(volume(block) for block in remaining_dimensions)
+    else:
+        raise BoxError('Sku with dimensions {} does not fit into a box with '
+                       'dimensions {}'.format('X'.join(sku_dims),
+                                              'X'.join(box_dims)))
+    return {
+        "remaining_volume": remaining_volume,
+        "remaining_dimensional_blocks": blocks
+    }
+
+
+def how_many_skus_fit(sku_info, box_info, max_packed=None):
+    '''
+    returns the number of of skus of a certain size can fit in a box, as well
+        as the remaining volume
+    assumes sku and box dimensions are on in the same units
+    '''
+    sku_dims = sorted([sku_info['width'], sku_info['height'],
+                       sku_info['length']])
+    box_dims = sorted([box_info['width'], box_info['height'],
+                                   box_info['length']])
+    remaining_dimensions = [box_dims]
+    remaining_volume = volume(box_dims)
+    sku = SkuTuple(None, sku_dims)
+    skus_packed = [[]]
+
+    while remaining_dimensions != []:
+        skus_to_pack = [sku, sku]
+        remaing_dimensions = insert_skus_into_dimensions(remaining_dimensions,
+                                                         skus_to_pack,
+                                                         skus_packed)
+        remaining_volume -= volume(sku_dims)
+        if max_packed is not None and len(skus_packed) == max_packed:
+            break
+    return {
+        "total_packed": len(skus_packed[0]),
+        "remaining_volume": remaining_volume
+    }
+
 
 def select_useable_boxes(session, min_box_dimensions, team,
                          flat_rate_okay=False):
