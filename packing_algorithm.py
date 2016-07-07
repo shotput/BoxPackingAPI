@@ -265,9 +265,7 @@ def insert_skus_into_dimensions(remaining_dimensions, skus_to_pack, skus_packed)
                 left_over_dimensions = best_fit(sku.dimensions, block)
                 for left_over_block in left_over_dimensions:
                     # only append left over block if at least one sku fits
-                    if (len(skus_to_pack) > 0 and
-                            something_fits(skus_to_pack,
-                                           left_over_block)):
+                    if something_fits(skus_to_pack, left_over_block):
                         remaining_dimensions.append(left_over_block)
                 # if a sku fits, remaining dimensions will have changed
                 # break out of look
