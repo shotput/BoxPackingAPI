@@ -160,7 +160,7 @@ def api_packing_algorithm(session, boxes_info, skus_info, options):
     # only return the package, because these boxes don't have description so
     # flat_rate boxes won't be a thing - at least for now
     package_info = box_dictionary['package']
-    package_contents = package_info.skus_per_box
+    package_contents = package_info.skus_per_box.sku_number
     best_box = package_info.box.to_json()
     last_parcel = package_info.last_parcel
     return {
@@ -202,9 +202,9 @@ def pre_pack_boxes(box_info, skus_info, options):
     for sku_number, info in skus_info.iteritems():
         dimension_units = info['dimension_units']
         weight_units = info['weight_units']
-        sorted_dims = sorted([dim_to_cm(info['height']),
-                              dim_to_cm(info['length']),
-                              dim_to_cm(info['width'])])
+        sorted_dims = sorted([dim_to_cm(info['height'], dimension_units),
+                              dim_to_cm(info['length'], dimension_units),
+                              dim_to_cm(info['width'], dimension_units)])
         if not does_it_fit(sorted_dims, box_dims):
             raise BoxError('Some of your skus are too big for the box you\'ve'
                            ' selected. Please select a bigger box or contact'
@@ -216,8 +216,9 @@ def pre_pack_boxes(box_info, skus_info, options):
         total_weight += info['weight_g'] * int(info['quantity'])
     skus_to_pack = sorted(skus_to_pack, key=lambda sku: sku[1][2], reverse=True)
     box_dims = sorted(box_dims)
-    skus_packed = pack_boxes(box_dims, skus_to_pack)
-
+    sku_tuples_packed = pack_boxes(box_dims, skus_to_pack)
+    skus_packed = [[sku.sku_number for sku in parcel]
+                   for parcel in sku_tuples_packed]
     if math.ceil(float(total_weight) / max_weight) > len(skus_packed):
         additional_box = []
         for skus in skus_packed:
@@ -298,8 +299,21 @@ def shotput_db_packing_algorithm(session, team, qty_per_sku,
     if len(useable_boxes) == 0:
         raise BoxError(msg.boxes_too_small)
 
-    return packing_algorithm(unordered_skus, useable_boxes, min_boxes_by_weight,
-                             zone)
+    box_dictionary = packing_algorithm(unordered_skus, useable_boxes,
+                                       min_boxes_by_weight, zone)
+    if box_dictionary['package'] is not None:
+        skus_per_box = [[sku.sku_number for sku in parcel]
+                        for parcel in box_dictionary['package'].skus_per_box]
+        box_dictionary['package'] = box_dictionary['package']._replace(
+            skus_per_box=skus_per_box)
+    if box_dictionary['flat_rate'] is not None:
+        skus_per_box = [[sku.sku_number for sku in parcel]
+                        for parcel in box_dictionary['flat_rate'].skus_per_box]
+        box_dictionary['flat_rate'] = box_dictionary['flat_rate']._replace(
+            skus_per_box=skus_per_box)
+
+
+    return box_dictionary
 
 def compare_1000_times(trials=None):
     results = {
