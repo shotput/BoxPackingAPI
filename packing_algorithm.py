@@ -259,7 +259,7 @@ def insert_skus_into_dimensions(remaining_dimensions, skus_to_pack, skus_packed)
         for sku in skus_to_pack:
             if does_it_fit(sku.dimensions, block):
                 # if the sku fits, pack it, remove it from the skus to pack
-                skus_packed[-1].append(sku.sku_number)
+                skus_packed[-1].append(sku)
                 skus_to_pack.remove(sku)
                 # find the remaining dimensions in the box after packing
                 left_over_dimensions = best_fit(sku.dimensions, block)
@@ -380,10 +380,10 @@ def packing_algorithm(unordered_skus, useable_boxes, min_boxes_by_weight,
     >>> packing_algorithm([sku1, sku2], [], {sku1: 1, sku2: 3}, True)
     {
         'package': (box=<best_standard_box object>,
-                    skus_per_box= [[sku1, sku2], [sku2, sku2]],
-                    last_parcel=<smaller_box object),
+                    skus_per_box= [[SkuTuple, SkuTuple], [SkuTuple, SkuTuple]],
+                    last_parcel=<smaller_box object>),
         'flat_rate': (box=<best_flat_rate object>,
-                      skus_per_box=[[sku1], [sku2, sku2, sku2]],
+                      skus_per_box=[[SkuTuple], [SkuTuple, SkuTuple, SkuTuple]],
                       last_parcel=None)
     }
     '''
@@ -408,8 +408,6 @@ def packing_algorithm(unordered_skus, useable_boxes, min_boxes_by_weight,
                         additional_box = [skus.pop()]
             packed_skus.append(additional_box)
             packed_boxes[box_dict['box']] = packed_skus
-
-
 
     box_dictionary = {
         'package': None,
@@ -455,9 +453,7 @@ def packing_algorithm(unordered_skus, useable_boxes, min_boxes_by_weight,
             num_packages_required > 1):
         package = box_dictionary['package']
         # repack the last parcels, see if they should go in a smaller box
-        smallest_skus_to_pack = [SkuTuple(sku, sorted([sku.width_cm,
-                                                       sku.height_cm,
-                                                       sku.length_cm]))
+        smallest_skus_to_pack = [SkuTuple(sku, sorted(sku.dimensions))
                                  for sku in package.skus_per_box[-1]]
         for box_dict in useable_boxes:
             # using non-flat rate boxes and those already smaller than the
@@ -471,5 +467,4 @@ def packing_algorithm(unordered_skus, useable_boxes, min_boxes_by_weight,
                     box_dictionary['package'] = package._replace(
                         last_parcel=smaller_box)
                     break
-
     return box_dictionary

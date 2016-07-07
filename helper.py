@@ -116,30 +116,42 @@ def select_useable_boxes(session, min_box_dimensions, team,
     return sorted(useable_boxes, key=lambda box: box['box'].total_cubic_cm)
 
 
-def api_packing_algorithm(boxes_info, skus_info, options):
+def dim_to_cm(dim, dimension_units):
+    return convert_dimensional_units(float(dim), dimension_units,
+                                     to_unit=units.CENTIMETERS)
+
+
+def api_packing_algorithm(session, boxes_info, skus_info, options):
     boxes = []
     total_weight = 0
     skus = []
     min_box_dimensions = [None, None, None]
     for sku in skus_info:
-        dimensions = sorted(float(sku['width']), float(sku['height']),
-                            float(sku['length']))
-        skus.append(SkuTuple(sku['sku_number'], dimensions))
+        dimensions = sorted([float(sku['width']), float(sku['height']),
+                             float(sku['length'])])
+        skus += [SkuTuple(sku['sku_number'], dimensions)] * sku['quantity']
         weight_units = sku['weight_units']
         total_weight += convert_mass_units(float(sku['weight']), weight_units,
-                                           to_units='grams')
+                                           to_unit='grams')
         min_box_dimensions = [max(a, b) for a, b in izip(dimensions,
                                                          min_box_dimensions)]
     max_weight = options.get('max_weight') or 31710
     for box in boxes_info:
-        dimensions = sorted(float(box['width']), float(box['height']),
-                            float(box['length']))
+        dimension_units = box.get('dimension_units', units.CENTIMETERS)
+        dimensions = sorted([dim_to_cm(box['width'], dimension_units),
+                             dim_to_cm(box['length'], dimension_units),
+                             dim_to_cm(box['height'], dimension_units)])
         if does_it_fit(min_box_dimensions, dimensions):
+            box_weight_g = convert_mass_units(float(box['weight']),
+                                              box['weight_units'],
+                                              to_unit='grams')
             boxes.append({
-                'box': box['name'],
+                'box': ShippingBox(box['name'], box['name'],
+                                   box.get('description', ''), None,
+                                   box_weight_g, dimensions[0], dimensions[1],
+                                   dimensions[2], 0),
                 'dimensions': dimensions
             })
-
     min_boxes_by_weight = math.ceil(total_weight / max_weight)
     # sort boxes by volume
     boxes = sorted(boxes, key=lambda box: volume(box['dimensions']))
@@ -147,7 +159,15 @@ def api_packing_algorithm(boxes_info, skus_info, options):
     box_dictionary = packing_algorithm(skus, boxes, min_boxes_by_weight)
     # only return the package, because these boxes don't have description so
     # flat_rate boxes won't be a thing - at least for now
-    return box_dictionary['package']
+    package_info = box_dictionary['package']
+    package_contents = package_info.skus_per_box
+    best_box = package_info.box.to_json()
+    last_parcel = package_info.last_parcel
+    return {
+        'best_box': best_box,
+        'package_contents': package_contents,
+        'last_parcel': last_parcel
+    }
 
 
 def weight_of_box_contents(box_contents, sku_info):
@@ -171,14 +191,9 @@ def pre_pack_boxes(box_info, skus_info, options):
     List[int, int, int], List[Dict[str, str], Dict[str, str] -> List[List[int]]
     '''
     dimension_units = box_info['dimension_units']
-
-    def dim_to_cm(dim):
-        return convert_dimensional_units(float(dim), dimension_units,
-                                         to_unit=units.CENTIMETERS)
-
-    box_dims = sorted([dim_to_cm(box_info['width']),
-                       dim_to_cm(box_info['length']),
-                       dim_to_cm(box_info['height'])])
+    box_dims = sorted([dim_to_cm(box_info['width'], dimension_units),
+                       dim_to_cm(box_info['length'], dimension_units),
+                       dim_to_cm(box_info['height'], dimension_units)])
     skus_to_pack = []
     weight_units = box_info['weight_units']
     total_weight = convert_mass_units(box_info['weight'], weight_units,
