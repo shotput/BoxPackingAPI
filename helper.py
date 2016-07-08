@@ -56,7 +56,7 @@ def how_many_skus_fit(sku_info, box_info, max_packed=None):
                                    box_info['length']])
     remaining_dimensions = [box_dims]
     remaining_volume = volume(box_dims)
-    sku = SkuTuple(None, sku_dims)
+    sku = SkuTuple(None, sku_dims, sku_info.get('weight', 0))
     skus_packed = [[]]
     while remaining_dimensions != []:
         # skus_to_pack is of length 4 at every loop so there will be enough to
@@ -129,10 +129,12 @@ def api_packing_algorithm(session, boxes_info, skus_info, options):
     for sku in skus_info:
         dimensions = sorted([float(sku['width']), float(sku['height']),
                              float(sku['length'])])
-        skus += [SkuTuple(sku['sku_number'], dimensions)] * sku['quantity']
         weight_units = sku['weight_units']
-        total_weight += convert_mass_units(float(sku['weight']), weight_units,
-                                           to_unit='grams')
+        sku_weight =  convert_mass_units(float(sku['weight']), weight_units,
+                                         to_unit='grams')
+        total_weight += sku_weight
+        skus += ([SkuTuple(sku['sku_number'], dimensions, sku_weight)] *
+                 sku['quantity'])
         min_box_dimensions = [max(a, b) for a, b in izip(dimensions,
                                                          min_box_dimensions)]
     max_weight = options.get('max_weight') or 31710
@@ -209,10 +211,10 @@ def pre_pack_boxes(box_info, skus_info, options):
             raise BoxError('Some of your skus are too big for the box you\'ve'
                            ' selected. Please select a bigger box or contact'
                            ' ops@shotput.com.')
-        skus_to_pack += ([SkuTuple(sku_number, sorted_dims)] *
-                         int(info['quantity']))
         info['weight_g'] = convert_mass_units(info['weight'], weight_units,
                                               to_unit='grams')
+        skus_to_pack += [SkuTuple(sku_number, sorted_dims,
+                         int(info['weight_g']))] * int(info['quantity'])
         total_weight += info['weight_g'] * int(info['quantity'])
     skus_to_pack = sorted(skus_to_pack, key=lambda sku: sku[1][2], reverse=True)
     box_dims = sorted(box_dims)
@@ -287,7 +289,8 @@ def shotput_db_packing_algorithm(session, team, qty_per_sku,
                              sku_data['sku'].length_cm])
         min_box_dimensions = [max(a, b) for a, b in izip(dimensions,
                                                          min_box_dimensions)]
-        unordered_skus += ([SkuTuple(sku_data['sku'], dimensions)] *
+        unordered_skus += ([SkuTuple(sku_data['sku'], dimensions,
+                            sku_data['sku'].weight_g)] *
                            int(sku_data['quantity']))
 
     useable_boxes = select_useable_boxes(session, min_box_dimensions, team,
@@ -343,7 +346,7 @@ def compare_1000_times(trials=None):
     percent_saved = []
     for _ in xrange(trials):
         returned = compare_pyshipping_with_shotput()
-        results['number_of_parcels'][returned['best_results']] +=1
+        results['number_of_parcels'][returned['best_results']] += 1
         # interpret data when there is a tie
         if returned['best_results'] == 'tie':
             shotput_last_parcel = returned['shotput']['skus_per_parcel'][-1]
@@ -356,20 +359,20 @@ def compare_1000_times(trials=None):
             else:
                 winner = 'tie'
                 if returned['shotput']['num_parcels'] == 1:
-                    results['when_tied']['all_in_one_bin'] +=1
-            results['when_tied'][winner] +=1
+                    results['when_tied']['all_in_one_bin'] += 1
+            results['when_tied'][winner] += 1
         # if returned['best_results'] == 'pyshipping':
         #     results['number_of_parcels']['errors'].append(returned)
         fastest = ('shotput', 'pyshipping', 'tie')[(
-            returned['shotput']['time'] > returned['pyshipping']['time'])
-            + (returned['shotput']['time'] <= returned['pyshipping']['time'])]
+            returned['shotput']['time'] > returned['pyshipping']['time']) +
+            (returned['shotput']['time'] <= returned['pyshipping']['time'])]
         results['time_efficiency'][fastest] += 1
         shotput_time += returned['shotput']['time']
         pyshipping_time += returned['pyshipping']['time']
-        saved = (returned['pyshipping']['num_parcels']
-                 - returned['shotput']['num_parcels'])
-        if not (returned['best_results'] == 'tie'
-                and returned['shotput']['num_parcels'] == 1):
+        saved = (returned['pyshipping']['num_parcels'] -
+                 returned['shotput']['num_parcels'])
+        if not (returned['best_results'] == 'tie' and
+                returned['shotput']['num_parcels'] == 1):
             parcels_diff.append(saved)
             percent_saved.append(float(saved) /
                                  returned['pyshipping']['num_parcels'])
@@ -385,11 +388,11 @@ def compare_1000_times(trials=None):
     parcels_diff_regression['median'] = parcels_diff[sample_size / 2 - 1]
     percent_saved_regression['median'] = percent_saved[sample_size / 2 - 1]
     parcels_diff_regression['standard_deviation'] = math.sqrt(sum(
-        math.pow(x - parcels_diff_regression['mean'], 2) for x in parcels_diff)
-        * (1.0 / float(sample_size)))
+        math.pow(x - parcels_diff_regression['mean'], 2)
+        for x in parcels_diff) * (1.0 / float(sample_size)))
     percent_saved_regression['standard_deviation'] = math.sqrt(sum(
-        math.pow(x - percent_saved_regression['mean'], 2) for x in percent_saved)
-        * (1.0 / float(sample_size)))
+        math.pow(x - percent_saved_regression['mean'], 2)
+        for x in percent_saved) * (1.0 / float(sample_size)))
     results['parcels_diff_regression'] = parcels_diff_regression
     results['percent_saved_regression'] = percent_saved_regression
     results['shotput_time_avg'] = shotput_time / float(trials)
@@ -404,11 +407,13 @@ def compare_pyshipping_with_shotput():
     from time import time
     skus = []
     py_skus = []
-    box_dims = sorted([randint(100, 200), randint(100, 200), randint(100, 200)])
+    box_dims = sorted([randint(100, 200), randint(100, 200),
+                       randint(100, 200)])
     num_skus = 500
     for _ in xrange(num_skus):
-        sku_dims = sorted([randint(20, 100), randint(20, 100), randint(20, 100)])
-        skus.append(SkuTuple(str(volume(sku_dims)), sku_dims))
+        sku_dims = sorted([randint(20, 100), randint(20, 100),
+                           randint(20, 100)])
+        skus.append(SkuTuple(str(volume(sku_dims)), sku_dims, 0))
         py_skus.append(Package((sku_dims[0], sku_dims[1], sku_dims[2]), 0))
     start = time()
     skus_packed = pack_boxes(box_dims, skus)
