@@ -2,7 +2,7 @@ from .helper import (compare_1000_times, api_packing_algorithm,
     space_after_packing, how_many_skus_fit)
 from flask import Blueprint, request, jsonify, current_app
 from fulfillment_api import messages as msg
-
+from fulfillment_api.errors import BoxError
 from ..authentication.login_required import (login_required,
                                              shotput_permission_required)
 from ..crossdomain import crossdomain

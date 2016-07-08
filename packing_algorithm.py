@@ -50,12 +50,7 @@ data path:
 
 from collections import namedtuple
 
-from fulfillment_api import messages as msg
-from fulfillment_api.authentication.shipping_box import ShippingBox
 from fulfillment_api.constants import usps_shipping
-from fulfillment_api.errors import BoxError
-from fulfillment_api.shipments.package_helper import compute_package_weight
-from fulfillment_api.util.unit_conversion import convert_mass_units
 
 from itertools import izip
 
