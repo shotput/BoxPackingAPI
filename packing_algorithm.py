@@ -357,7 +357,7 @@ def compare_flat_rate_prices(zone, box, best_flat_rate_box):
     return best_flat_rate_box if box_cost > best_box_cost else box
 
 
-def packing_algorithm(unordered_skus, useable_boxes, min_boxes_by_weight,
+def packing_algorithm(unordered_skus, useable_boxes, max_weight,
                       zone=None):
     '''
     from skus provided, and boxes available, pack boxes with skus
@@ -392,21 +392,21 @@ def packing_algorithm(unordered_skus, useable_boxes, min_boxes_by_weight,
     # pack the biggest skus first then progressively pack the smaller ones
     for box_dict in useable_boxes:
         packed_skus = pack_boxes(box_dict['dimensions'], skus_to_pack)
-        if len(packed_skus) >= min_boxes_by_weight:
-            packed_boxes[box_dict['box']] = packed_skus
-        else:
-            additional_box = []
-            for skus in packed_skus:
-                while weight_of_box_contents(skus, skus_info) > max_weight:
-                    if ((weight_of_box_contents(additional_box, skus_info) +
-                            float(skus_info[skus[-1]]['weight_g'])) <=
-                            max_weight):
-                        additional_box.append(skus.pop())
-                    else:
-                        packed_skus.append([sku for sku in additional_box])
-                        additional_box = [skus.pop()]
-            packed_skus.append(additional_box)
-            packed_boxes[box_dict['box']] = packed_skus
+        # if len(packed_skus) >= min_boxes_by_weight:
+        #     packed_boxes[box_dict['box']] = packed_skus
+        # else:
+        additional_box = packed_skus.pop()
+        for skus in packed_skus:
+            weight = sum(sku.weight for sku in skus)
+            if weight > max_weight:
+                if ((sum(sku.weight for sku in additional_box) +
+                        float(skus[-1].weight)) <= max_weight):
+                    additional_box.append(skus.pop())
+                else:
+                    packed_skus.append(additional_box)
+                    additional_box = [skus.pop()]
+        packed_skus.append(additional_box)
+        packed_boxes[box_dict['box']] = packed_skus
 
     box_dictionary = {
         'package': None,

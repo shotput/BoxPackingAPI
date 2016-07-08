@@ -53,7 +53,7 @@ def how_many_skus_fit(sku_info, box_info, max_packed=None):
     sku_dims = sorted([sku_info['width'], sku_info['height'],
                        sku_info['length']])
     box_dims = sorted([box_info['width'], box_info['height'],
-                                   box_info['length']])
+                       box_info['length']])
     remaining_dimensions = [box_dims]
     remaining_volume = volume(box_dims)
     sku = SkuTuple(None, sku_dims, sku_info.get('weight', 0))
@@ -122,8 +122,10 @@ def dim_to_cm(dim, dimension_units):
 
 
 def api_packing_algorithm(session, boxes_info, skus_info, options):
+    '''
+
+    '''
     boxes = []
-    total_weight = 0
     skus = []
     min_box_dimensions = [None, None, None]
     for sku in skus_info:
@@ -132,7 +134,6 @@ def api_packing_algorithm(session, boxes_info, skus_info, options):
         weight_units = sku['weight_units']
         sku_weight =  convert_mass_units(float(sku['weight']), weight_units,
                                          to_unit='grams')
-        total_weight += sku_weight
         skus += ([SkuTuple(sku['sku_number'], dimensions, sku_weight)] *
                  sku['quantity'])
         min_box_dimensions = [max(a, b) for a, b in izip(dimensions,
@@ -154,11 +155,10 @@ def api_packing_algorithm(session, boxes_info, skus_info, options):
                                    dimensions[2], 0),
                 'dimensions': dimensions
             })
-    min_boxes_by_weight = math.ceil(total_weight / max_weight)
     # sort boxes by volume
     boxes = sorted(boxes, key=lambda box: volume(box['dimensions']))
     # send everything through the packing algorithm
-    box_dictionary = packing_algorithm(skus, boxes, min_boxes_by_weight)
+    box_dictionary = packing_algorithm(skus, boxes, max_weight)
     # only return the package, because these boxes don't have description so
     # flat_rate boxes won't be a thing - at least for now
     package_info = box_dictionary['package']
@@ -280,7 +280,6 @@ def shotput_db_packing_algorithm(session, team, qty_per_sku,
     unordered_skus = []
     max_weight = preferred_max_weight or 31710
     min_box_dimensions = [None, None, None]
-    weight = compute_package_weight(qty_per_sku)
 
     for sku_number, sku_data in qty_per_sku.iteritems():
 
@@ -297,13 +296,12 @@ def shotput_db_packing_algorithm(session, team, qty_per_sku,
                                          flat_rate_okay)
      # if weight is greater than max, make sure we are separating it into
     # multiple boxes
-    min_boxes_by_weight = math.ceil(weight / max_weight)
 
     if len(useable_boxes) == 0:
         raise BoxError(msg.boxes_too_small)
 
     box_dictionary = packing_algorithm(unordered_skus, useable_boxes,
-                                       min_boxes_by_weight, zone)
+                                       max_weight, zone)
     if box_dictionary['package'] is not None:
         skus_per_box = [[sku.sku_number for sku in parcel]
                         for parcel in box_dictionary['package'].skus_per_box]
