@@ -138,7 +138,10 @@ def api_packing_algorithm(session, boxes_info, skus_info, options):
                  sku['quantity'])
         min_box_dimensions = [max(a, b) for a, b in izip(dimensions,
                                                          min_box_dimensions)]
-    max_weight = options.get('max_weight') or 31710
+    if options is not None:
+        max_weight = int(options.get('max_weight'))
+    else:
+        max_weight = 31710
     for box in boxes_info:
         dimension_units = box.get('dimension_units', units.CENTIMETERS)
         dimensions = sorted([dim_to_cm(box['width'], dimension_units),
@@ -312,7 +315,6 @@ def shotput_db_packing_algorithm(session, team, qty_per_sku,
                         for parcel in box_dictionary['flat_rate'].skus_per_box]
         box_dictionary['flat_rate'] = box_dictionary['flat_rate']._replace(
             skus_per_box=skus_per_box)
-
 
     return box_dictionary
 
