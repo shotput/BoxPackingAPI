@@ -198,10 +198,16 @@ def api_packing_algorithm(session, boxes_info, skus_info, options):
     #                          for parcel in package_info.skus_per_box]
     package_contents_dict = [get_sku_dictionary_from_list(parcel)
                              for parcel in package_info.skus_per_box]
-    package_contents = [{sku: info['quantity'] for sku, info in parcel.iteritems()}
+    package_contents = [{sku: info['quantity']
+                         for sku, info in parcel.iteritems()}
                         for parcel in package_contents_dict]
-    best_box = [box for box in boxes_info if box['name'] == package_info.box.name][0]
-    last_parcel = package_info.last_parcel
+    best_box = [box for box in boxes_info
+                if box['name'] == package_info.box.name][0]
+    if package_info.last_parcel is not None:
+        last_parcel = [box for box in boxes_info
+                       if box['name'] == package_info.last_parcel.name][0]
+    else:
+        last_parcel = None
     return {
         'best_box': best_box,
         'package_contents': package_contents,
