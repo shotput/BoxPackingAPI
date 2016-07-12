@@ -391,24 +391,26 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
                           reverse=True)
     # pack the biggest skus first then progressively pack the smaller ones
     for box_dict in useable_boxes:
+        box = box_dict['box']
         packed_skus = pack_boxes(box_dict['dimensions'], skus_to_pack)
         # additional box starts as the last parcel
-        additional_box = packed_skus.pop()
+        additional_box = []
         for skus in packed_skus:
             # if the weight of the contents of the box are greater than the
             # given max weight
-            if sum(sku.weight for sku in skus) > max_weight:
-                if ((sum(sku.weight for sku in additional_box) +
+            if sum(sku.weight for sku in skus) + box.weight_g > max_weight:
+                if ((sum(sku.weight for sku in additional_box)
+                     + float(skus[-1].weight) + box.weight_g) <= max_weight):
                     # if the additional box weight + the last sku is less than
                     # the max weight, add it to the box
-                        float(skus[-1].weight)) <= max_weight):
                     additional_box.append(skus.pop())
                 else:
                     # else start a new box and append the additional box to the
                     # packed_skus
                     packed_skus.append(additional_box)
                     additional_box = [skus.pop()]
-        packed_skus.append(additional_box)
+        if len(additional_box) > 0:
+            packed_skus.append(additional_box)
         packed_boxes[box_dict['box']] = packed_skus
 
     box_dictionary = {
