@@ -149,4 +149,7 @@ def box_packing_api():
     except TypeError as e:
         current_app.log.error(e)
         return jsonify(error=msg.invalid_data), 400
+    except BoxError as e:
+        current_app.log.error(e)
+        return jsonify(error=e.message)
     return jsonify(best_package=best_package)

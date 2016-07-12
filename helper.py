@@ -187,6 +187,9 @@ def api_packing_algorithm(session, boxes_info, skus_info, options):
                                    dimensions[2], 0),
                 'dimensions': dimensions
             })
+    if len(boxes) == 0:
+        raise BoxError('Some of your skus are too big for your boxes, Please '
+                       'provide larger boxes.')
     # sort boxes by volume
     boxes = sorted(boxes, key=lambda box: volume(box['dimensions']))
     # send everything through the packing algorithm
