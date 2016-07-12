@@ -194,8 +194,6 @@ def api_packing_algorithm(session, boxes_info, skus_info, options):
     # only return the package, because these boxes don't have description so
     # flat_rate boxes won't be a thing - at least for now
     package_info = box_dictionary['package']
-    # package_contents_list = [[sku.sku_number for sku in parcel]
-    #                          for parcel in package_info.skus_per_box]
     package_contents_dict = [get_sku_dictionary_from_list(parcel)
                              for parcel in package_info.skus_per_box]
     package_contents = [{sku: info['quantity']
