@@ -1,13 +1,13 @@
 from fulfillment_api.authentication.shipping_box import ShippingBox
 from fulfillment_api.constants import usps_shipping, units
 from fulfillment_api.errors import BoxError
+import fulfillment_api.messages as msg
 from fulfillment_api.util.unit_conversion import (convert_dimensional_units,
                                                   convert_mass_units)
 
 from .packing_algorithm import (packing_algorithm, does_it_fit, SkuTuple,
                                 volume, pack_boxes, best_fit,
                                 insert_skus_into_dimensions)
-import fulfillment_api.messages as msg
 
 import math
 from itertools import izip
@@ -19,7 +19,7 @@ def space_after_packing(sku_info, box_info):
     '''
     returns the remaining space in a box after packing a sku and
         the remaining block sizes within the box after an ideal fit
-    assumes sku and box dimensions are on in the same units
+    assumes sku and box dimensions are in the same units
     '''
 
     sku_dims = sorted([sku_info['width'], sku_info['height'],
@@ -351,7 +351,7 @@ def pre_pack_boxes(box_info, skus_info, options):
     return parcel_shipments
 
 
-def shotput_db_packing_algorithm(session, team, qty_per_sku,
+def shotput_packing_algorithm(session, team, qty_per_sku,
                                  flat_rate_okay=False, zone=None,
                                  preferred_max_weight=None):
     '''
@@ -373,7 +373,7 @@ def shotput_db_packing_algorithm(session, team, qty_per_sku,
         preferred_max_weight (int): max weight of a parcel if not 70lbs
 
     Example:
-    >>> shotput_db_packing_algorithm(session, team1, {sku1: 1, sku2: 3}, True)
+    >>> shotput_packing_algorithm(session, team1, {sku1: 1, sku2: 3}, True)
     {
         'package': (box=<best_standard_box object>,
                     skus_per_box= [[sku1, sku2], [sku2, sku2]],
