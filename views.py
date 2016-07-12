@@ -1,5 +1,5 @@
 from .helper import (compare_1000_times, api_packing_algorithm,
-    space_after_packing, how_many_skus_fit)
+    space_after_packing, how_many_skus_fit, pre_pack_boxes)
 from flask import Blueprint, request, jsonify, current_app
 from fulfillment_api import messages as msg
 from fulfillment_api.errors import BoxError

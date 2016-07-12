@@ -399,8 +399,8 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
             # if the weight of the contents of the box are greater than the
             # given max weight
             if sum(sku.weight for sku in skus) + box.weight_g > max_weight:
-                if ((sum(sku.weight for sku in additional_box)
-                     + float(skus[-1].weight) + box.weight_g) <= max_weight):
+                if ((sum(sku.weight for sku in additional_box) +
+                        float(skus[-1].weight) + box.weight_g) <= max_weight):
                     # if the additional box weight + the last sku is less than
                     # the max weight, add it to the box
                     additional_box.append(skus.pop())

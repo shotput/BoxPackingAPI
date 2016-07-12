@@ -1,15 +1,16 @@
-from fulfillment_api.errors import BoxError
-from fulfillment_api.shipments.package_helper import compute_package_weight
 from fulfillment_api.authentication.shipping_box import ShippingBox
 from fulfillment_api.constants import usps_shipping, units
+from fulfillment_api.errors import BoxError
+from fulfillment_api.util.unit_conversion import (convert_dimensional_units,
+                                                  convert_mass_units)
 
 from .packing_algorithm import (packing_algorithm, does_it_fit, SkuTuple,
                                 volume, pack_boxes, best_fit,
                                 insert_skus_into_dimensions)
-from fulfillment_api.util.unit_conversion import (convert_dimensional_units,
-                                                  convert_mass_units)
-from itertools import izip
+import fulfillment_api.messages as msg
+
 import math
+from itertools import izip
 from sqlalchemy import or_
 from collections import Counter
 
@@ -62,9 +63,9 @@ def how_many_skus_fit(sku_info, box_info, max_packed=None):
         # skus_to_pack is of length 4 at every loop so there will be enough to
         # fill each of the remaining blocks
         skus_to_pack = [sku, sku, sku, sku]
-        remaing_dimensions = insert_skus_into_dimensions(remaining_dimensions,
-                                                         skus_to_pack,
-                                                         skus_packed)
+        remaining_dimensions = insert_skus_into_dimensions(remaining_dimensions,
+                                                           skus_to_pack,
+                                                           skus_packed)
         # skus_to_pack updates, insert skus into dimensions may pack more than
         # one sku
         remaining_volume -= volume(sku_dims) * (4 - len(skus_to_pack))
@@ -227,8 +228,8 @@ def api_packing_algorithm(boxes_info, skus_info, options):
         dimensions = sorted([float(sku['width']), float(sku['height']),
                              float(sku['length'])])
         weight_units = sku['weight_units']
-        sku_weight =  convert_mass_units(float(sku['weight']), weight_units,
-                                         to_unit='grams')
+        sku_weight = convert_mass_units(float(sku['weight']), weight_units,
+                                        to_unit='grams')
         skus += ([SkuTuple(sku['sku_number'], dimensions, sku_weight)] *
                  sku['quantity'])
         min_box_dimensions = [max(a, b) for a, b in izip(dimensions,
@@ -305,7 +306,7 @@ def pre_pack_boxes(box_info, skus_info, options):
     skus_to_pack = []
     weight_units = box_info['weight_units']
     box_weight = convert_mass_units(box_info['weight'], weight_units,
-                                      to_unit='grams')
+                                    to_unit='grams')
     total_weight = box_weight
     max_weight = options.get('max_weight', 31710)  # given max weight or 70lbs
     for sku_number, info in skus_info.iteritems():
@@ -399,7 +400,7 @@ def shotput_db_packing_algorithm(session, team, qty_per_sku,
 
     useable_boxes = select_useable_boxes(session, min_box_dimensions, team,
                                          flat_rate_okay)
-     # if weight is greater than max, make sure we are separating it into
+    # if weight is greater than max, make sure we are separating it into
     # multiple boxes
 
     if len(useable_boxes) == 0:
@@ -419,6 +420,7 @@ def shotput_db_packing_algorithm(session, team, qty_per_sku,
             skus_per_box=skus_per_box)
 
     return box_dictionary
+
 
 def compare_1000_times(trials=None):
     results = {
