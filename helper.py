@@ -76,6 +76,32 @@ def how_many_skus_fit(sku_info, box_info, max_packed=None):
     }
 
 
+def get_sku_dictionary_from_list(skus):
+    '''
+    Takes a list of SimpleSkus and translates into dictionary format
+
+    Args:
+        skus (List[SimpleSku])
+    Returns
+        Dict[str, Dict[{
+            'sku': SimpleSku,
+            'quantity': int
+        }]]
+
+        A dictionary with sku numbers as keys and a dict with 'sku' and
+        'quantity', containing the related SimpleSku and the quantity originally
+        in `skus`.
+    '''
+    simple_skus = {}
+    qty_per_sku = Counter()
+    for sku in skus:
+        qty_per_sku[sku.sku_number] += 1
+        if sku.sku_number not in simple_skus:
+            simple_skus[sku.sku_number] = sku
+    return {sku_number: {'sku': sku, 'quantity': qty_per_sku[sku_number]}
+            for sku_number, sku in simple_skus.iteritems()}
+
+
 def select_useable_boxes(session, min_box_dimensions, team,
                          flat_rate_okay=False):
     '''
@@ -127,6 +153,9 @@ def api_packing_algorithm(session, boxes_info, skus_info, options):
     '''
     boxes = []
     skus = []
+    if len(set(box['name'] for box in boxes_info)) < len(boxes_info):
+        # non-unique names for the boxes have been used.
+        raise BoxError('Please use unique names for your boxes')
     min_box_dimensions = [None, None, None]
     for sku in skus_info:
         dimensions = sorted([float(sku['width']), float(sku['height']),
@@ -139,7 +168,7 @@ def api_packing_algorithm(session, boxes_info, skus_info, options):
         min_box_dimensions = [max(a, b) for a, b in izip(dimensions,
                                                          min_box_dimensions)]
     if options is not None:
-        max_weight = int(options.get('max_weight'))
+        max_weight = int(options.get('max_weight', 31710))
     else:
         max_weight = 31710
     for box in boxes_info:
@@ -165,9 +194,13 @@ def api_packing_algorithm(session, boxes_info, skus_info, options):
     # only return the package, because these boxes don't have description so
     # flat_rate boxes won't be a thing - at least for now
     package_info = box_dictionary['package']
-    package_contents = [[sku.sku_number for sku in parcel]
-                        for parcel in package_info.skus_per_box]
-    best_box = package_info.box.to_json()
+    # package_contents_list = [[sku.sku_number for sku in parcel]
+    #                          for parcel in package_info.skus_per_box]
+    package_contents_dict = [get_sku_dictionary_from_list(parcel)
+                             for parcel in package_info.skus_per_box]
+    package_contents = [{sku: info['quantity'] for sku, info in parcel.iteritems()}
+                        for parcel in package_contents_dict]
+    best_box = [box for box in boxes_info if box['name'] == package_info.box.name][0]
     last_parcel = package_info.last_parcel
     return {
         'best_box': best_box,
