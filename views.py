@@ -10,7 +10,7 @@ from ..crossdomain import crossdomain
 blueprint = Blueprint('shipments', __name__)
 
 
-@blueprint.route('/box_packing_api/pre_pack_boxes',
+@blueprint.route('/box_packing_api/simple',
                  methods=['POST', 'OPTIONS'])
 @crossdomain(api=True)
 @login_required
@@ -132,7 +132,7 @@ def compare_pack():
     return jsonify(compare_1000_times(trials))
 
 
-@blueprint.route('/box_packing_api', methods=['POST', 'OPTIONS'])
+@blueprint.route('/box_packing_api/full', methods=['POST', 'OPTIONS'])
 @crossdomain(api=True)
 @login_required
 def box_packing_api():
