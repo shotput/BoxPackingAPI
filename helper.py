@@ -147,6 +147,19 @@ def dim_to_cm(dim, dimension_units):
                                      to_unit=units.CENTIMETERS)
 
 
+def weight_of_box_contents(box_contents):
+    '''
+    returns the weight of the package contents
+
+    Args:
+        box_contents (List[sku_number])
+        sku_info (Dict[Dict[{
+                'weight_g': int/float
+            }]])
+    '''
+    return sum(float(sku.weight) for sku in box_contents)
+
+
 def api_packing_algorithm(session, boxes_info, skus_info, options):
     '''
 
@@ -199,9 +212,18 @@ def api_packing_algorithm(session, boxes_info, skus_info, options):
     package_info = box_dictionary['package']
     package_contents_dict = [get_sku_dictionary_from_list(parcel)
                              for parcel in package_info.skus_per_box]
-    package_contents = [{sku: info['quantity']
-                         for sku, info in parcel.iteritems()}
-                        for parcel in package_contents_dict]
+    package_contents = []
+    for parcel in package_contents_dict:
+        skus_packed = {}
+        total_weight = package_info.box.weight_g
+        for sku, info in parcel.iteritems():
+            skus_packed[sku] = info['quantity']
+            total_weight += info['quantity'] * info['sku'].weight
+        package_contents.append({
+            'skus_packed': skus_packed,
+            'total_weight': total_weight
+        })
+
     best_box = [box for box in boxes_info
                 if box['name'] == package_info.box.name][0]
     if package_info.last_parcel is not None:
@@ -214,19 +236,6 @@ def api_packing_algorithm(session, boxes_info, skus_info, options):
         'package_contents': package_contents,
         'last_parcel': last_parcel
     }
-
-
-def weight_of_box_contents(box_contents, sku_info):
-    '''
-    returns the weight of the package contents
-
-    Args:
-        box_contents (List[sku_number])
-        sku_info (Dict[Dict[{
-                'weight_g': int/float
-            }]])
-    '''
-    return sum(float(sku.weight) for sku in box_contents)
 
 
 def pre_pack_boxes(box_info, skus_info, options):
@@ -267,8 +276,8 @@ def pre_pack_boxes(box_info, skus_info, options):
     if math.ceil(float(total_weight) / max_weight) > len(skus_packed):
         additional_box = []
         for skus in skus_packed:
-            while weight_of_box_contents(skus, skus_info) > max_weight:
-                if (weight_of_box_contents(additional_box, skus_info) +
+            while weight_of_box_contents(skus) > max_weight:
+                if (weight_of_box_contents(additional_box) +
                         float(skus[-1].weight) <= max_weight):
                     additional_box.append(skus.pop())
                 else:
