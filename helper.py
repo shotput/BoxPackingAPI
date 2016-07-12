@@ -62,15 +62,15 @@ def how_many_skus_fit(sku_info, box_info, max_packed=None):
     while remaining_dimensions != []:
         # skus_to_pack is of length 4 at every loop so there will be enough to
         # fill each of the remaining blocks
-        skus_to_pack = [sku, sku, sku, sku]
-        remaining_dimensions = insert_skus_into_dimensions(remaining_dimensions,
-                                                           skus_to_pack,
-                                                           skus_packed)
-        # skus_to_pack updates, insert skus into dimensions may pack more than
-        # one sku
-        remaining_volume -= volume(sku_dims) * (4 - len(skus_to_pack))
-        if max_packed is not None and len(skus_packed[0]) == max_packed:
-            break
+        for block in remaining_dimensions:
+            skus_to_pack = [sku, sku, sku, sku]
+            remaining_dimensions, skus_packed = insert_skus_into_dimensions(
+                remaining_dimensions, skus_to_pack, skus_packed)
+            # skus_to_pack updates, insert skus into dimensions may pack more
+            # tahn one sku
+            remaining_volume -= volume(sku_dims) * (4 - len(skus_to_pack))
+            if max_packed is not None and len(skus_packed[0]) == max_packed:
+                break
     return {
         "total_packed": len(skus_packed[0]),
         "remaining_volume": remaining_volume

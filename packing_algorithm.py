@@ -253,24 +253,24 @@ def best_fit(sku_dims, box_dims):
 
 def insert_skus_into_dimensions(remaining_dimensions, skus_to_pack,
                                 skus_packed):
-    for block in remaining_dimensions:
-        for sku in skus_to_pack:
-            if does_it_fit(sku.dimensions, block):
-                # if the sku fits, pack it, remove it from the skus to pack
-                skus_packed[-1].append(sku)
-                skus_to_pack.remove(sku)
-                # find the remaining dimensions in the box after packing
-                left_over_dimensions = best_fit(sku.dimensions, block)
-                for left_over_block in left_over_dimensions:
-                    # only append left over block if at least one sku fits
-                    if something_fits(skus_to_pack, left_over_block):
-                        remaining_dimensions.append(left_over_block)
-                # if a sku fits, remaining dimensions will have changed
-                # break out of look
-                break
-        # remove the block from that remaining dimensions
-        remaining_dimensions.remove(block)
-    return remaining_dimensions
+    block = remaining_dimensions[0]
+    for sku in skus_to_pack:
+        if does_it_fit(sku.dimensions, block):
+            # if the sku fits, pack it, remove it from the skus to pack
+            skus_packed[-1].append(sku)
+            skus_to_pack.remove(sku)
+            # find the remaining dimensions in the box after packing
+            left_over_dimensions = best_fit(sku.dimensions, block)
+            for left_over_block in left_over_dimensions:
+                # only append left over block if at least one sku fits
+                if something_fits(skus_to_pack, left_over_block):
+                    remaining_dimensions.append(left_over_block)
+            # if a sku fits, remaining dimensions will have changed
+            # break out of look
+            break
+    # remove the block from that remaining dimensions
+    remaining_dimensions.pop(0)
+    return remaining_dimensions, skus_packed
 
 
 def pack_boxes(box_dimensions, skus_to_pack):
@@ -313,9 +313,9 @@ def pack_boxes(box_dimensions, skus_to_pack):
             remaining_dimensions = [box_dimensions]
             skus_packed.append([])
         # iterate through remaining dimensions to pack boxes
-        remaining_dimensions = insert_skus_into_dimensions(remaining_dimensions,
-                                                           skus_to_pack_copy,
-                                                           skus_packed)
+        for block in remaining_dimensions:
+            remaining_dimensions, skus_packed = insert_skus_into_dimensions(
+                remaining_dimensions, skus_to_pack_copy, skus_packed)
     return skus_packed
 
 
