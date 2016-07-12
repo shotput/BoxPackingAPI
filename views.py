@@ -120,6 +120,7 @@ def how_many_fit():
                  methods=['GET', 'OPTIONS'])
 @crossdomain(api=True)
 @login_required
+@shotput_permission_required
 def compare_pack():
     '''
     and endpoint which can be used to verify the accuracy of

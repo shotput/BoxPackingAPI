@@ -156,13 +156,66 @@ def weight_of_box_contents(box_contents):
         sku_info (Dict[Dict[{
                 'weight_g': int/float
             }]])
+    Returns:
+        float
     '''
     return sum(float(sku.weight) for sku in box_contents)
 
 
-def api_packing_algorithm(session, boxes_info, skus_info, options):
+def api_packing_algorithm(boxes_info, skus_info, options):
     '''
+    non-database calling method which allows checking multiple boxes
+    for packing efficiency
 
+    Args:
+        session (sqlalchemy.orm.session.Session)
+        boxes_info (List[Dict(
+                weight: float
+                height: float
+                length: float
+                width: float
+                dimension_units: ('inches', 'centimeters', 'feet', 'meters')
+                weight_units: ('grams', 'pounds', 'kilograms', 'onces')
+                name: Sting
+            )])
+        skus_info (List[Dict(
+                weight: float
+                height: float
+                length: float
+                width: float
+                dimension_units: ('inches', 'centimeters', 'feet', 'meters')
+                weight_units: ('grams', 'pounds', 'kilograms', 'onces')
+                sku_number: Sting
+            )])
+        options (Dict(
+                max_weight: float
+            ))
+
+    Returns:
+        Dict[
+            'best_box': Dict[
+                weight: float
+                height: float
+                length: float
+                width: float
+                dimension_units: ('inches', 'centimeters', 'feet', 'meters')
+                weight_units: ('grams', 'pounds', 'kilograms', 'onces')
+                name: Sting
+            ]
+            'package_contents': List[Dict[
+                skus_packed: Dict[sku, quantity]
+                total_weight: float
+            ],
+            'last_parcel': Dict[
+                weight: float
+                height: float
+                length: float
+                width: float
+                dimension_units: ('inches', 'centimeters', 'feet', 'meters')
+                weight_units: ('grams', 'pounds', 'kilograms', 'onces')
+                name: Sting
+            ]
+        ]
     '''
     boxes = []
     skus = []
