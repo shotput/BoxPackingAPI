@@ -351,9 +351,8 @@ def pre_pack_boxes(box_info, skus_info, options):
     return parcel_shipments
 
 
-def shotput_packing_algorithm(session, team, qty_per_sku,
-                                 flat_rate_okay=False, zone=None,
-                                 preferred_max_weight=None):
+def shotput_packing_algorithm(session, team, qty_per_sku, flat_rate_okay=False,
+                              zone=None, preferred_max_weight=None):
     '''
     from skus provided, and boxes available, pack boxes with skus
 
