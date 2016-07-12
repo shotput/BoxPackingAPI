@@ -226,7 +226,7 @@ def weight_of_box_contents(box_contents, sku_info):
                 'weight_g': int/float
             }]])
     '''
-    return sum(float(sku_info[sku]['weight_g']) for sku in box_contents)
+    return sum(float(sku.weight) for sku in box_contents)
 
 
 def pre_pack_boxes(box_info, skus_info, options):
@@ -242,8 +242,9 @@ def pre_pack_boxes(box_info, skus_info, options):
                        dim_to_cm(box_info['height'], dimension_units)])
     skus_to_pack = []
     weight_units = box_info['weight_units']
-    total_weight = convert_mass_units(box_info['weight'], weight_units,
+    box_weight = convert_mass_units(box_info['weight'], weight_units,
                                       to_unit='grams')
+    total_weight = box_weight
     max_weight = options.get('max_weight', 31710)  # given max weight or 70lbs
     for sku_number, info in skus_info.iteritems():
         dimension_units = info['dimension_units']
@@ -262,15 +263,13 @@ def pre_pack_boxes(box_info, skus_info, options):
         total_weight += info['weight_g'] * int(info['quantity'])
     skus_to_pack = sorted(skus_to_pack, key=lambda sku: sku[1][2], reverse=True)
     box_dims = sorted(box_dims)
-    sku_tuples_packed = pack_boxes(box_dims, skus_to_pack)
-    skus_packed = [[sku.sku_number for sku in parcel]
-                   for parcel in sku_tuples_packed]
+    skus_packed = pack_boxes(box_dims, skus_to_pack)
     if math.ceil(float(total_weight) / max_weight) > len(skus_packed):
         additional_box = []
         for skus in skus_packed:
             while weight_of_box_contents(skus, skus_info) > max_weight:
                 if (weight_of_box_contents(additional_box, skus_info) +
-                        float(skus_info[skus[-1]]['weight_g']) <= max_weight):
+                        float(skus[-1].weight) <= max_weight):
                     additional_box.append(skus.pop())
                 else:
                     skus_packed.append([sku for sku in additional_box])
@@ -280,12 +279,12 @@ def pre_pack_boxes(box_info, skus_info, options):
     parcel_shipments = []
     for skus in skus_packed:
         sku_qty = Counter()
+        parcel_weight = box_weight
         for sku in skus:
-            sku_qty[sku] += 1
-        parcel_shipments.append({'simple_skus': []})
-        for sku, qty in sku_qty.iteritems():
-            parcel_shipments[-1]['simple_skus'].append({'sku_number': sku,
-                                                        'quantity': qty})
+            sku_qty[sku.sku_number] += 1
+            parcel_weight += sku.weight
+        parcel_shipments.append({'packed_skus': dict(sku_qty),
+                                 'total_weight': parcel_weight})
     return parcel_shipments
 
 
