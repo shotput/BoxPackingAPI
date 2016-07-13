@@ -1,7 +1,6 @@
 from fulfillment_api.authentication.shipping_box import ShippingBox
-from fulfillment_api.constants import usps_shipping, units
+from fulfillment_api.constants import units
 from fulfillment_api.errors import BoxError
-import fulfillment_api.messages as msg
 from fulfillment_api.util.unit_conversion import (convert_dimensional_units,
                                                   convert_mass_units)
 
