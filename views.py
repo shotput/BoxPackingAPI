@@ -1,8 +1,9 @@
-from .helper import (compare_1000_times, api_packing_algorithm,
-    space_after_packing, how_many_skus_fit, pre_pack_boxes)
 from flask import Blueprint, request, jsonify, current_app
 from fulfillment_api import messages as msg
 from fulfillment_api.errors import BoxError
+from .helper import (compare_1000_times, api_packing_algorithm,
+    space_after_packing, how_many_skus_fit, pre_pack_boxes)
+
 from ..authentication.login_required import (login_required,
                                              shotput_permission_required)
 from ..crossdomain import crossdomain
@@ -17,7 +18,13 @@ blueprint = Blueprint('shipments', __name__)
 @shotput_permission_required
 def get_best_fit():
     '''
-    A non-database calling
+    A non-database calling endpoint which is a simple usage of the box packing
+    algorithm which accepts json with skus and a single box.
+
+    Returns:
+        'skus_packed': List[Dict[
+            skus_packed: Dict[sku, quantity]
+            total_weight: float
     '''
     json_data = request.get_json(force=True)
     current_app.log.data(json_data)
@@ -143,7 +150,7 @@ def how_many_fit():
 @shotput_permission_required
 def compare_pack():
     '''
-    and endpoint which can be used to verify the accuracy of
+    endpoint which can be used to verify the accuracy of
     shotput v pyshipping
     '''
     params = request.args.to_dict()
@@ -156,6 +163,36 @@ def compare_pack():
 @crossdomain(api=True)
 @login_required
 def box_packing_api():
+    '''
+    a full access endpoint to the box algorithm, which accepts boxes and skus
+    and returns the best box and the skus arrangement
+
+    Outputs:
+        Dict[
+            'best_box': Dict[
+                weight: float
+                height: float
+                length: float
+                width: float
+                dimension_units: ('inches', 'centimeters', 'feet', 'meters')
+                weight_units: ('grams', 'pounds', 'kilograms', 'onces')
+                name: Sting
+            ]
+            'package_contents': List[Dict[
+                skus_packed: Dict[sku, quantity]
+                total_weight: float
+            ],
+            'last_parcel': Dict[
+                weight: float
+                height: float
+                length: float
+                width: float
+                dimension_units: ('inches', 'centimeters', 'feet', 'meters')
+                weight_units: ('grams', 'pounds', 'kilograms', 'onces')
+                name: Sting
+            ]
+        ]
+    '''
     json_data = request.get_json(force=True)
     current_app.log.data(json_data)
     try:
