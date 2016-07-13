@@ -8,7 +8,7 @@ from ..authentication.login_required import (login_required,
                                              shotput_permission_required)
 from ..crossdomain import crossdomain
 
-blueprint = Blueprint('shipments', __name__)
+blueprint = Blueprint('box_packing', __name__)
 
 
 @blueprint.route('/box_packing_api/simple',
