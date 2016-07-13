@@ -56,8 +56,9 @@ def space_after_packing(sku_info, box_info):
         remaining_volume = sum(volume(block) for block in remaining_dimensions)
     else:
         raise BoxError('Sku with dimensions {} does not fit into a box with '
-                       'dimensions {}'.format('X'.join(sku_dims),
-                                              'X'.join(box_dims)))
+                       'dimensions {}'
+                       .format('X'.join([str(dim) for dim in sku_dims]),
+                               'X'.join([str(dim) for dim in box_dims])))
     return {
         'remaining_volume': remaining_volume,
         'remaining_dimensional_blocks': blocks
@@ -108,7 +109,8 @@ def how_many_skus_fit(sku_info, box_info, max_packed=None):
             remaining_dimensions, skus_packed = insert_skus_into_dimensions(
                 remaining_dimensions, skus_to_pack, skus_packed)
             # skus_to_pack updates, insert skus into dimensions may pack more
-            # tahn one sku
+            # than one sku and therefore we find the difference between the
+            # length of the remaining skus to pack and the original (4)
             remaining_volume -= volume(sku_dims) * (4 - len(skus_to_pack))
             if (max_packed is not None and
                     len(skus_packed[0]) == int(max_packed)):

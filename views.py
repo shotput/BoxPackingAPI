@@ -70,7 +70,6 @@ def get_space_after_packing():
     }
     Output:
     {
-        "space": {
         "remaining_dimensional_blocks": [
           {
             "height": 8,
@@ -79,8 +78,8 @@ def get_space_after_packing():
           }
         ],
         "remaining_volume": 72
-      }
     }
+
     '''
     json_data = request.get_json(force=True)
     current_app.log.data(json_data)
@@ -94,7 +93,10 @@ def get_space_after_packing():
     except TypeError as e:
         current_app.log.error(e)
         return jsonify(error=msg.invalid_data), 400
-    return jsonify(space=space)
+    except BoxError as e:
+        current_app.log.error(e)
+        return jsonify(error=e.message), 400
+    return jsonify(space)
 
 
 @blueprint.route('/box_packing_api/capacity', methods=['POST', 'OPTIONS'])
