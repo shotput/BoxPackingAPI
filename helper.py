@@ -299,7 +299,34 @@ def pre_pack_boxes(box_info, skus_info, options):
     returns the packed skus of one specific box based on sku_info
     the sku info input does not require a db call
 
-    List[int, int, int], List[Dict[str, str], Dict[str, str] -> List[List[int]]
+    Args
+        boxes_info (Dict[
+                weight: float
+                height: float
+                length: float
+                width: float
+                dimension_units: ('inches', 'centimeters', 'feet', 'meters')
+                weight_units: ('grams', 'pounds', 'kilograms', 'onces')
+                name: Sting
+            ])
+        skus_info (List[Dict[
+                weight: float
+                height: float
+                length: float
+                width: float
+                dimension_units: ('inches', 'centimeters', 'feet', 'meters')
+                weight_units: ('grams', 'pounds', 'kilograms', 'onces')
+                sku_number: Sting
+            ])
+        options (Dict[
+                max_weight: float
+            ])
+
+    Returns
+        List[Dict[{
+            packed_skus: Dict[sku, qty],
+            total_weight: float
+        }]]
     '''
     dimension_units = box_info['dimension_units']
     box_dims = sorted([dim_to_cm(box_info['width'], dimension_units),

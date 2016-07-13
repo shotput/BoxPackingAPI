@@ -83,7 +83,8 @@ def any_reverse(iterable):
     behaves as python's any funtion, but reviews a list in reverse
     optimzation for when a True is more likely at the end of the list
     '''
-    for i, x in enumerate(iterable):
+
+    for i in xrange(len(iterable)):
         if iterable[-1 - i]:
             return True
     return False
