@@ -83,6 +83,7 @@ def get_space_after_packing():
     }
     '''
     json_data = request.get_json(force=True)
+    current_app.log.data(json_data)
     try:
         sku_info = json_data['sku_info']
         box_info = json_data['box_info']
@@ -154,6 +155,7 @@ def compare_pack():
 @login_required
 def box_packing_api():
     json_data = request.get_json(force=True)
+    current_app.log.data(json_data)
     session = request.session
     try:
         boxes_info = json_data['boxes_info']

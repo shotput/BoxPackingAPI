@@ -78,18 +78,6 @@ def does_it_fit(sku_dims, box_dims):
                for box_dim, sku_dim in izip(box_dims, sku_dims))
 
 
-def any_reverse(iterable):
-    '''
-    behaves as python's any funtion, but reviews a list in reverse
-    optimzation for when a True is more likely at the end of the list
-    '''
-
-    for i in xrange(len(iterable)):
-        if iterable[-1 - i]:
-            return True
-    return False
-
-
 def something_fits(skus, box_dims):
     '''
     iterates through all skus to see if one of them will fit in the dimensions
@@ -102,7 +90,7 @@ def something_fits(skus, box_dims):
     Returns
         bool: whether or not any of the skus fit into the box
     '''
-    return any_reverse([does_it_fit(sku[1], box_dims) for sku in skus])
+    return any(does_it_fit(sku[1], box_dims) for sku in skus)
 
 
 def get_side_2_side_3(sku_dims, box_dims, side_1):
