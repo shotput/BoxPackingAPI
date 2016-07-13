@@ -111,9 +111,26 @@ def how_many_fit():
     }
     '''
     json_data = request.get_json(force=True)
+    current_app.log.data(json_data)
     sku_info = json_data['sku_info']
     box_info = json_data['box_info']
-    return jsonify(how_many_skus_fit(sku_info, box_info))
+    max_packed = json_data.get('max_packed')
+    try:
+        return jsonify(how_many_skus_fit(sku_info, box_info, max_packed))
+    except KeyError as e:
+        current_app.log.error(e)
+        return jsonify(error=msg.missing_value_for(e.message)), 400
+    except TypeError as e:
+        current_app.log.error(e)
+        return jsonify(error=msg.invalid_data), 400
+    except BoxError as e:
+        current_app.log.error(e)
+        return jsonify(error=e.message)
+    except ValueError as e:
+        current_app.log.error(e)
+        value = e.message.split(' ')[-1]
+        return jsonify(error=('Invalid data in request. Check value {}'
+                              .format(value))), 400
 
 
 @blueprint.route('/box_packing_api/compare_packing_efficiency',
@@ -152,4 +169,9 @@ def box_packing_api():
     except BoxError as e:
         current_app.log.error(e)
         return jsonify(error=e.message)
+    except ValueError as e:
+        current_app.log.error(e)
+        value = e.message.split(' ')[-1]
+        return jsonify(error=('Invalid data in request. Check value {}'
+                              .format(value))), 400
     return jsonify(best_package=best_package)
