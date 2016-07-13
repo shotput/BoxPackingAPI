@@ -360,7 +360,7 @@ def pre_pack_boxes(box_info, skus_info, options):
     if math.ceil(float(total_weight) / max_weight) > len(skus_packed):
         additional_box = []
         for skus in skus_packed:
-            while weight_of_box_contents(skus) > max_weight:
+            while weight_of_box_contents(skus) + box_weight > max_weight:
                 if (weight_of_box_contents(additional_box) +
                         float(skus[-1].weight) <= max_weight):
                     additional_box.append(skus.pop())
