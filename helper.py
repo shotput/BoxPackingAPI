@@ -112,6 +112,8 @@ def how_many_skus_fit(sku_info, box_info, max_packed=None):
             # tahn one sku
             remaining_volume -= volume(sku_dims) * (4 - len(skus_to_pack))
             if max_packed is not None and len(skus_packed[0]) == max_packed:
+                # set remaining dimensions to empty to break from the while loop
+                remaining_dimensions = []
                 break
     return {
         'total_packed': len(skus_packed[0]),
@@ -224,7 +226,7 @@ def api_packing_algorithm(boxes_info, skus_info, options):
     skus = []
     if len(set(box['name'] for box in boxes_info)) < len(boxes_info):
         # non-unique names for the boxes have been used.
-        raise BoxError('Please use unique names for your boxes')
+        raise BoxError('Please use unqiue boxes with unique names')
     min_box_dimensions = [None, None, None]
     for sku in skus_info:
         dimensions = sorted([float(sku['width']), float(sku['height']),
