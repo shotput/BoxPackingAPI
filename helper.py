@@ -19,6 +19,27 @@ def space_after_packing(sku_info, box_info):
     returns the remaining space in a box after packing a sku and
         the remaining block sizes within the box after an ideal fit
     assumes sku and box dimensions are in the same units
+
+    Args:
+
+        sku_info (Dict[{
+                width: float
+                height: float
+                length: float
+                weight: float
+            }])
+        box_info (Dict[{
+                width: float
+                height: float
+                length: float
+                weight: float
+            }])
+
+    Returns
+        Dict[{
+            'remaining_volume': float
+            'remaining_dimensional_blocks': List[List[int, int, int]]
+        }]
     '''
 
     sku_dims = sorted([sku_info['width'], sku_info['height'],
@@ -29,9 +50,9 @@ def space_after_packing(sku_info, box_info):
     if does_it_fit(sku_dims, box_dims):
         remaining_dimensions = best_fit(sku_dims, box_dims)
         blocks = [{
-            "width": block[0],
-            "height": block[1],
-            "length": block[2]
+            'width': block[0],
+            'height': block[1],
+            'length': block[2]
         } for block in remaining_dimensions]
         remaining_volume = sum(volume(block) for block in remaining_dimensions)
     else:
@@ -39,8 +60,8 @@ def space_after_packing(sku_info, box_info):
                        'dimensions {}'.format('X'.join(sku_dims),
                                               'X'.join(box_dims)))
     return {
-        "remaining_volume": remaining_volume,
-        "remaining_dimensional_blocks": blocks
+        'remaining_volume': remaining_volume,
+        'remaining_dimensional_blocks': blocks
     }
 
 
@@ -49,6 +70,28 @@ def how_many_skus_fit(sku_info, box_info, max_packed=None):
     returns the number of of skus of a certain size can fit in a box, as well
         as the remaining volume
     assumes sku and box dimensions are on in the same units
+
+    Args:
+
+        sku_info (Dict[{
+                width: float
+                height: float
+                length: float
+                weight: float
+            }])
+        box_info (Dict[{
+                width: float
+                height: float
+                length: float
+                weight: float
+            }])
+        max_packed (int)
+
+    Returns:
+        Dict[{
+            total_packed: int
+            remaining_volume: float
+        }]
     '''
     sku_dims = sorted([sku_info['width'], sku_info['height'],
                        sku_info['length']])
@@ -71,8 +114,8 @@ def how_many_skus_fit(sku_info, box_info, max_packed=None):
             if max_packed is not None and len(skus_packed[0]) == max_packed:
                 break
     return {
-        "total_packed": len(skus_packed[0]),
-        "remaining_volume": remaining_volume
+        'total_packed': len(skus_packed[0]),
+        'remaining_volume': remaining_volume
     }
 
 
