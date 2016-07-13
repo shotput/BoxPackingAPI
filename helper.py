@@ -339,21 +339,21 @@ def pre_pack_boxes(box_info, skus_info, options):
                                     to_unit='grams')
     total_weight = box_weight
     max_weight = options.get('max_weight', 31710)  # given max weight or 70lbs
-    for sku_number, info in skus_info.iteritems():
-        dimension_units = info['dimension_units']
-        weight_units = info['weight_units']
-        sorted_dims = sorted([dim_to_cm(info['height'], dimension_units),
-                              dim_to_cm(info['length'], dimension_units),
-                              dim_to_cm(info['width'], dimension_units)])
+    for sku in skus_info:
+        dimension_units = sku['dimension_units']
+        weight_units = sku['weight_units']
+        sorted_dims = sorted([dim_to_cm(sku['height'], dimension_units),
+                              dim_to_cm(sku['length'], dimension_units),
+                              dim_to_cm(sku['width'], dimension_units)])
         if not does_it_fit(sorted_dims, box_dims):
             raise BoxError('Some of your skus are too big for the box you\'ve'
                            ' selected. Please select a bigger box or contact'
                            ' ops@shotput.com.')
-        info['weight_g'] = convert_mass_units(info['weight'], weight_units,
+        sku['weight_g'] = convert_mass_units(sku['weight'], weight_units,
                                               to_unit='grams')
-        skus_to_pack += [SkuTuple(sku_number, sorted_dims,
-                         int(info['weight_g']))] * int(info['quantity'])
-        total_weight += info['weight_g'] * int(info['quantity'])
+        skus_to_pack += [SkuTuple(sku['sku_number'], sorted_dims,
+                         int(sku['weight_g']))] * int(sku['quantity'])
+        total_weight += sku['weight_g'] * int(sku['quantity'])
     skus_to_pack = sorted(skus_to_pack, key=lambda sku: sku[1][2], reverse=True)
     box_dims = sorted(box_dims)
     skus_packed = pack_boxes(box_dims, skus_to_pack)
