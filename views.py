@@ -156,7 +156,6 @@ def compare_pack():
 def box_packing_api():
     json_data = request.get_json(force=True)
     current_app.log.data(json_data)
-    session = request.session
     try:
         boxes_info = json_data['boxes_info']
         skus_info = json_data['skus_info']

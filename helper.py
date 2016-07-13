@@ -110,7 +110,8 @@ def how_many_skus_fit(sku_info, box_info, max_packed=None):
             # skus_to_pack updates, insert skus into dimensions may pack more
             # tahn one sku
             remaining_volume -= volume(sku_dims) * (4 - len(skus_to_pack))
-            if max_packed is not None and len(skus_packed[0]) == max_packed:
+            if (max_packed is not None and
+                    len(skus_packed[0]) == int(max_packed)):
                 # set remaining dimensions to empty to break from the while loop
                 remaining_dimensions = []
                 break
@@ -350,7 +351,7 @@ def pre_pack_boxes(box_info, skus_info, options):
                            ' selected. Please select a bigger box or contact'
                            ' ops@shotput.com.')
         sku['weight_g'] = convert_mass_units(sku['weight'], weight_units,
-                                              to_unit='grams')
+                                             to_unit='grams')
         skus_to_pack += [SkuTuple(sku['sku_number'], sorted_dims,
                          int(sku['weight_g']))] * int(sku['quantity'])
         total_weight += sku['weight_g'] * int(sku['quantity'])
