@@ -21,7 +21,7 @@ def space_after_packing(sku_info, box_info):
 
     Args:
 
-        sku_info (Dict[{
+        product_info (Dict[{
                 width: float
                 height: float
                 length: float
@@ -305,14 +305,14 @@ def pre_pack_boxes(box_info, skus_info, options):
                 weight_units: ('grams', 'pounds', 'kilograms', 'onces')
                 name: String
             ])
-        skus_info (List[Dict[
+        products_info (List[Dict[
                 weight: float
                 height: float
                 length: float
                 width: float
                 dimension_units: ('inches', 'centimeters', 'feet', 'meters')
                 weight_units: ('grams', 'pounds', 'kilograms', 'onces')
-                sku_number: String
+                product_name: String
             ])
         options (Dict[
                 max_weight: float
@@ -320,7 +320,7 @@ def pre_pack_boxes(box_info, skus_info, options):
 
     Returns
         List[Dict[{
-            packed_skus: Dict[sku, qty],
+            packed_products: Dict[sku, qty],
             total_weight: float
         }]]
     '''
@@ -346,7 +346,7 @@ def pre_pack_boxes(box_info, skus_info, options):
                            ' ops@shotput.com.')
         sku['weight_g'] = convert_mass_units(sku['weight'], weight_units,
                                              to_unit='grams')
-        skus_to_pack += [SkuTuple(sku['sku_number'], sorted_dims,
+        skus_to_pack += [SkuTuple(sku['product_name'], sorted_dims,
                          int(sku['weight_g']))] * int(sku['quantity'])
         total_weight += sku['weight_g'] * int(sku['quantity'])
     skus_to_pack = sorted(skus_to_pack, key=lambda sku: sku[1][2], reverse=True)

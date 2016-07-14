@@ -50,7 +50,7 @@ def get_best_fit():
     except KeyError as e:
         current_app.log.error(e)
         return jsonify(error=msg.missing_value_for(e.message))
-    return jsonify(skus_packed=skus_arrangement)
+    return jsonify(packages=skus_arrangement)
 
 
 @blueprint.route('/box_packing_api/remaining_volume',
