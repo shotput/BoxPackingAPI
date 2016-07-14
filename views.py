@@ -28,14 +28,14 @@ def get_best_fit():
     json_data = request.get_json(force=True)
     current_app.log.data(json_data)
     try:
-        skus_info = json_data['skus_info']
+        products_info = json_data['products_info']
         box_info = json_data['box_info']
         options = json_data.get('options', {})
     except KeyError as e:
         current_app.log.error(e)
         return jsonify(error=msg.missing_value_for(e)), 400
     try:
-        skus_arrangement = pre_pack_boxes(box_info, skus_info, options)
+        skus_arrangement = pre_pack_boxes(box_info, products_info, options)
     except BoxError as e:
         current_app.log.error(e)
         return jsonify(error=e.message), 400
@@ -90,7 +90,7 @@ def get_space_after_packing():
     json_data = request.get_json(force=True)
     current_app.log.data(json_data)
     try:
-        sku_info = json_data['sku_info']
+        sku_info = json_data['product_info']
         box_info = json_data['box_info']
         space = space_after_packing(sku_info, box_info)
     except KeyError as e:
@@ -121,7 +121,7 @@ def how_many_fit():
     '''
     json_data = request.get_json(force=True)
     current_app.log.data(json_data)
-    sku_info = json_data['sku_info']
+    sku_info = json_data['product_info']
     box_info = json_data['box_info']
     max_packed = json_data.get('max_packed')
     try:
@@ -196,9 +196,9 @@ def box_packing_api():
     current_app.log.data(json_data)
     try:
         boxes_info = json_data['boxes_info']
-        skus_info = json_data['skus_info']
+        products_info = json_data['products_info']
         options = json_data.get('options', {})
-        best_package = api_packing_algorithm(boxes_info, skus_info, options)
+        best_package = api_packing_algorithm(boxes_info, products_info, options)
     except KeyError as e:
         current_app.log.error(e)
         return jsonify(error=msg.missing_value_for(e.message)), 400

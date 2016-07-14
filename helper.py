@@ -55,8 +55,8 @@ def space_after_packing(sku_info, box_info):
         } for block in remaining_dimensions]
         remaining_volume = sum(volume(block) for block in remaining_dimensions)
     else:
-        raise BoxError('Sku with dimensions {} does not fit into a box with '
-                       'dimensions {}'
+        raise BoxError('Product with dimensions {} does not fit into a box with'
+                       ' dimensions {}'
                        .format('X'.join([str(dim) for dim in sku_dims]),
                                'X'.join([str(dim) for dim in box_dims])))
     return {
@@ -280,7 +280,7 @@ def api_packing_algorithm(boxes_info, skus_info, options):
             skus_packed[sku] = info['quantity']
             total_weight += info['quantity'] * info['sku'].weight
         package_contents.append({
-            'skus_packed': skus_packed,
+            'packed_products': skus_packed,
             'total_weight': total_weight,
             'best_box': best_box
         })
@@ -371,7 +371,7 @@ def pre_pack_boxes(box_info, skus_info, options):
         for sku in skus:
             sku_qty[sku.sku_number] += 1
             parcel_weight += sku.weight
-        parcel_shipments.append({'packed_skus': dict(sku_qty),
+        parcel_shipments.append({'packed_products': dict(sku_qty),
                                  'total_weight': parcel_weight})
     return parcel_shipments
 
