@@ -200,27 +200,18 @@ def api_packing_algorithm(boxes_info, skus_info, options):
 
     Returns:
         Dict[
-            'best_box': Dict[
-                weight: float
-                height: float
-                length: float
-                width: float
-                dimension_units: ('inches', 'centimeters', 'feet', 'meters')
-                weight_units: ('grams', 'pounds', 'kilograms', 'onces')
-                name: Sting
-            ]
             'package_contents': List[Dict[
                 skus_packed: Dict[sku, quantity]
                 total_weight: float
-            ],
-            'last_parcel': Dict[
-                weight: float
-                height: float
-                length: float
-                width: float
-                dimension_units: ('inches', 'centimeters', 'feet', 'meters')
-                weight_units: ('grams', 'pounds', 'kilograms', 'onces')
-                name: Sting
+                'best_box': Dict[
+                    weight: float
+                    height: float
+                    length: float
+                    width: float
+                    dimension_units: ('inches', 'centimeters', 'feet', 'meters')
+                    weight_units: ('grams', 'pounds', 'kilograms', 'onces')
+                    name: Sting
+                ]
             ]
         ]
     '''
@@ -273,17 +264,6 @@ def api_packing_algorithm(boxes_info, skus_info, options):
     package_contents_dict = [get_sku_dictionary_from_list(parcel)
                              for parcel in package_info.skus_per_box]
     package_contents = []
-    for parcel in package_contents_dict:
-        skus_packed = {}
-        total_weight = package_info.box.weight_g
-        for sku, info in parcel.iteritems():
-            skus_packed[sku] = info['quantity']
-            total_weight += info['quantity'] * info['sku'].weight
-        package_contents.append({
-            'skus_packed': skus_packed,
-            'total_weight': total_weight
-        })
-
     best_box = [box for box in boxes_info
                 if box['name'] == package_info.box.name][0]
     if package_info.last_parcel is not None:
@@ -291,10 +271,23 @@ def api_packing_algorithm(boxes_info, skus_info, options):
                        if box['name'] == package_info.last_parcel.name][0]
     else:
         last_parcel = None
+    for i, parcel in enumerate(package_contents_dict):
+        if i == len(package_contents_dict) - 1 and last_parcel != None:
+            best_box = last_parcel
+        print "best_box:", best_box
+        skus_packed = {}
+        total_weight = package_info.box.weight_g
+        for sku, info in parcel.iteritems():
+            skus_packed[sku] = info['quantity']
+            total_weight += info['quantity'] * info['sku'].weight
+        package_contents.append({
+            'skus_packed': skus_packed,
+            'total_weight': total_weight,
+            'best_box': best_box
+        })
+
     return {
-        'best_box': best_box,
-        'package_contents': package_contents,
-        'last_parcel': last_parcel
+        'package_contents': package_contents
     }
 
 
