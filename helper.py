@@ -274,7 +274,6 @@ def api_packing_algorithm(boxes_info, skus_info, options):
     for i, parcel in enumerate(package_contents_dict):
         if i == len(package_contents_dict) - 1 and last_parcel is not None:
             best_box = last_parcel
-        print "best_box:", best_box
         skus_packed = {}
         total_weight = package_info.box.weight_g
         for sku, info in parcel.iteritems():
