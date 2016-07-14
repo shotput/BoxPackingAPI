@@ -411,7 +411,7 @@ def compare_1000_times(trials=None):
             py_last_parcel = returned['pyshipping']['skus_per_parcel'][-1]
             if shotput_last_parcel > py_last_parcel:
                 winner = 'pyshipping'
-                # results['when_tied']['errors'].append(returned)
+                results['when_tied']['errors'].append(returned)
             elif shotput_last_parcel < py_last_parcel:
                 winner = 'shotput'
             else:
@@ -419,8 +419,8 @@ def compare_1000_times(trials=None):
                 if returned['shotput']['num_parcels'] == 1:
                     results['when_tied']['all_in_one_bin'] += 1
             results['when_tied'][winner] += 1
-        # if returned['best_results'] == 'pyshipping':
-        #     results['number_of_parcels']['errors'].append(returned)
+        if returned['best_results'] == 'pyshipping':
+            results['number_of_parcels']['errors'].append(returned)
         fastest = ('shotput', 'pyshipping', 'tie')[(
             returned['shotput']['time'] > returned['pyshipping']['time']) +
             (returned['shotput']['time'] <= returned['pyshipping']['time'])]
