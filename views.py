@@ -15,7 +15,6 @@ blueprint = Blueprint('box_packing', __name__)
                  methods=['POST', 'OPTIONS'])
 @crossdomain(api=True)
 @login_required
-@shotput_permission_required
 def get_best_fit():
     '''
     A non-database calling endpoint which is a simple usage of the box packing
