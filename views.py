@@ -198,7 +198,8 @@ def box_packing_api():
         boxes_info = json_data['boxes_info']
         products_info = json_data['products_info']
         options = json_data.get('options', {})
-        best_package = api_packing_algorithm(boxes_info, products_info, options)
+        package_contents = api_packing_algorithm(boxes_info, products_info,
+                                                 options)
     except KeyError as e:
         current_app.log.error(e)
         return jsonify(error=msg.missing_value_for(e.message)), 400
@@ -213,4 +214,4 @@ def box_packing_api():
         value = e.message.split(' ')[-1]
         return jsonify(error=('Invalid data in request. Check value {}'
                               .format(value))), 400
-    return jsonify(best_package=best_package)
+    return jsonify(package_contents)

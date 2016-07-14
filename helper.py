@@ -183,7 +183,7 @@ def api_packing_algorithm(boxes_info, skus_info, options):
                 width: float
                 dimension_units: ('inches', 'centimeters', 'feet', 'meters')
                 weight_units: ('grams', 'pounds', 'kilograms', 'onces')
-                name: Sting
+                name: String
             )])
         skus_info (List[Dict(
                 weight: float
@@ -192,7 +192,7 @@ def api_packing_algorithm(boxes_info, skus_info, options):
                 width: float
                 dimension_units: ('inches', 'centimeters', 'feet', 'meters')
                 weight_units: ('grams', 'pounds', 'kilograms', 'onces')
-                sku_number: Sting
+                product_name: String
             )])
         options (Dict(
                 max_weight: float
@@ -210,7 +210,7 @@ def api_packing_algorithm(boxes_info, skus_info, options):
                     width: float
                     dimension_units: ('inches', 'centimeters', 'feet', 'meters')
                     weight_units: ('grams', 'pounds', 'kilograms', 'onces')
-                    name: Sting
+                    name: String
                 ]
             ]
         ]
@@ -227,7 +227,7 @@ def api_packing_algorithm(boxes_info, skus_info, options):
         weight_units = sku['weight_units']
         sku_weight = convert_mass_units(float(sku['weight']), weight_units,
                                         to_unit='grams')
-        skus += ([SkuTuple(sku['sku_number'], dimensions, sku_weight)] *
+        skus += ([SkuTuple(sku['product_name'], dimensions, sku_weight)] *
                  sku['quantity'])
         min_box_dimensions = [max(a, b) for a, b in izip(dimensions,
                                                          min_box_dimensions)]
@@ -252,8 +252,8 @@ def api_packing_algorithm(boxes_info, skus_info, options):
                 'dimensions': dimensions
             })
     if len(boxes) == 0:
-        raise BoxError('Some of your skus are too big for your boxes, Please '
-                       'provide larger boxes.')
+        raise BoxError('Some of your products are too big for your boxes, '
+                       'Please provide larger boxes.')
     # sort boxes by volume
     boxes = sorted(boxes, key=lambda box: volume(box['dimensions']))
     # send everything through the packing algorithm
@@ -282,11 +282,11 @@ def api_packing_algorithm(boxes_info, skus_info, options):
         package_contents.append({
             'packed_products': skus_packed,
             'total_weight': total_weight,
-            'best_box': best_box
+            'box': best_box
         })
 
     return {
-        'package_contents': package_contents
+        'packages': package_contents
     }
 
 
@@ -303,7 +303,7 @@ def pre_pack_boxes(box_info, skus_info, options):
                 width: float
                 dimension_units: ('inches', 'centimeters', 'feet', 'meters')
                 weight_units: ('grams', 'pounds', 'kilograms', 'onces')
-                name: Sting
+                name: String
             ])
         skus_info (List[Dict[
                 weight: float
@@ -312,7 +312,7 @@ def pre_pack_boxes(box_info, skus_info, options):
                 width: float
                 dimension_units: ('inches', 'centimeters', 'feet', 'meters')
                 weight_units: ('grams', 'pounds', 'kilograms', 'onces')
-                sku_number: Sting
+                sku_number: String
             ])
         options (Dict[
                 max_weight: float
