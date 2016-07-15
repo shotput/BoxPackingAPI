@@ -1,3 +1,5 @@
+from fulfillment_api.authentication.products.simple_sku import (
+    get_sku_dictionary_from_list)
 from fulfillment_api.authentication.shipping_box import ShippingBox
 from fulfillment_api.constants import units
 from fulfillment_api.errors import BoxError
@@ -46,19 +48,19 @@ def space_after_packing(sku_info, box_info):
     box_dims = sorted([box_info['width'], box_info['height'],
                        box_info['length']])
 
-    if does_it_fit(sku_dims, box_dims):
-        remaining_dimensions = best_fit(sku_dims, box_dims)
-        blocks = [{
-            'width': block[0],
-            'height': block[1],
-            'length': block[2]
-        } for block in remaining_dimensions]
-        remaining_volume = sum(volume(block) for block in remaining_dimensions)
-    else:
+    if not does_it_fit(sku_dims, box_dims):
         raise BoxError('Product with dimensions {} does not fit into a box with'
                        ' dimensions {}'
-                       .format('X'.join([str(dim) for dim in sku_dims]),
-                               'X'.join([str(dim) for dim in box_dims])))
+                       .format('X'.join(map(str, sku_dims)),
+                               'X'.join(map(str, sku_dims))))
+    remaining_dimensions = best_fit(sku_dims, box_dims)
+    blocks = [{
+        'width': block[0],
+        'height': block[1],
+        'length': block[2]
+    } for block in remaining_dimensions]
+    remaining_volume = sum(volume(block) for block in remaining_dimensions)
+
     return {
         'remaining_volume': remaining_volume,
         'remaining_dimensional_blocks': blocks
@@ -102,9 +104,11 @@ def how_many_skus_fit(sku_info, box_info, max_packed=None):
     sku = SkuTuple(None, sku_dims, sku_info.get('weight', 0))
     skus_packed = [[]]
     while remaining_dimensions != []:
-        # skus_to_pack is of length 4 at every loop so there will be enough to
-        # fill each of the remaining blocks
         for block in remaining_dimensions:
+            # skus_to_pack is of length 4 at every loop because
+            # insert_skus_into_dimensions will pack up to 3 skus at any given
+            # time and then check that there are more skus to pack before
+            # continuing
             skus_to_pack = [sku, sku, sku, sku]
             remaining_dimensions, skus_packed = insert_skus_into_dimensions(
                 remaining_dimensions, skus_to_pack, skus_packed)
@@ -121,32 +125,6 @@ def how_many_skus_fit(sku_info, box_info, max_packed=None):
         'total_packed': len(skus_packed[0]),
         'remaining_volume': remaining_volume
     }
-
-
-def get_sku_dictionary_from_list(skus):
-    '''
-    Takes a list of SimpleSkus and translates into dictionary format
-
-    Args:
-        skus (List[SimpleSku])
-    Returns
-        Dict[str, Dict[{
-            'sku': SimpleSku,
-            'quantity': int
-        }]]
-
-        A dictionary with sku numbers as keys and a dict with 'sku' and
-        'quantity', containing the related SimpleSku and the quantity originally
-        in `skus`.
-    '''
-    simple_skus = {}
-    qty_per_sku = Counter()
-    for sku in skus:
-        qty_per_sku[sku.sku_number] += 1
-        if sku.sku_number not in simple_skus:
-            simple_skus[sku.sku_number] = sku
-    return {sku_number: {'sku': sku, 'quantity': qty_per_sku[sku_number]}
-            for sku_number, sku in simple_skus.iteritems()}
 
 
 def dim_to_cm(dim, dimension_units):
@@ -219,7 +197,7 @@ def api_packing_algorithm(boxes_info, skus_info, options):
     skus = []
     if len(set(box['name'] for box in boxes_info)) < len(boxes_info):
         # non-unique names for the boxes have been used.
-        raise BoxError('Please use unqiue boxes with unique names')
+        raise BoxError('Please use unique boxes with unique names')
     min_box_dimensions = [None, None, None]
     for sku in skus_info:
         dimensions = sorted([float(sku['width']), float(sku['height']),
@@ -252,7 +230,7 @@ def api_packing_algorithm(boxes_info, skus_info, options):
                 'dimensions': dimensions
             })
     if len(boxes) == 0:
-        raise BoxError('Some of your products are too big for your boxes, '
+        raise BoxError('Some of your products are too big for your boxes. '
                        'Please provide larger boxes.')
     # sort boxes by volume
     boxes = sorted(boxes, key=lambda box: volume(box['dimensions']))
@@ -273,16 +251,18 @@ def api_packing_algorithm(boxes_info, skus_info, options):
         last_parcel = None
     for i, parcel in enumerate(package_contents_dict):
         if i == len(package_contents_dict) - 1 and last_parcel is not None:
-            best_box = last_parcel
+            selected_box = last_parcel
+        else:
+            selected_box = best_box
         skus_packed = {}
-        total_weight = package_info.box.weight_g
+        total_weight = selected_box.weight_g
         for sku, info in parcel.iteritems():
             skus_packed[sku] = info['quantity']
             total_weight += info['quantity'] * info['sku'].weight
         package_contents.append({
             'packed_products': skus_packed,
             'total_weight': total_weight,
-            'box': best_box
+            'box': selected_box
         })
 
     return {
@@ -349,7 +329,8 @@ def pre_pack_boxes(box_info, skus_info, options):
         skus_to_pack += [SkuTuple(sku['product_name'], sorted_dims,
                          int(sku['weight_g']))] * int(sku['quantity'])
         total_weight += sku['weight_g'] * int(sku['quantity'])
-    skus_to_pack = sorted(skus_to_pack, key=lambda sku: sku[1][2], reverse=True)
+    skus_to_pack = sorted(skus_to_pack, key=lambda sku: sku.dimensions[2],
+                          reverse=True)
     box_dims = sorted(box_dims)
     skus_packed = pack_boxes(box_dims, skus_to_pack)
     if math.ceil(float(total_weight) / max_weight) > len(skus_packed):
@@ -357,7 +338,7 @@ def pre_pack_boxes(box_info, skus_info, options):
         for skus in skus_packed:
             while weight_of_box_contents(skus) + box_weight > max_weight:
                 if (weight_of_box_contents(additional_box) +
-                        float(skus[-1].weight) <= max_weight):
+                        skus[-1].weight <= max_weight):
                     additional_box.append(skus.pop())
                 else:
                     skus_packed.append([sku for sku in additional_box])

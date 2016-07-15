@@ -255,7 +255,7 @@ def insert_skus_into_dimensions(remaining_dimensions, skus_to_pack,
                 if something_fits(skus_to_pack, left_over_block):
                     remaining_dimensions.append(left_over_block)
             # if a sku fits, remaining dimensions will have changed
-            # break out of look
+            # break out of loop
             break
     # remove the block from that remaining dimensions
     remaining_dimensions.pop(0)
