@@ -168,27 +168,18 @@ def box_packing_api():
 
     Outputs:
         Dict[
-            'best_box': Dict[
-                weight: float
-                height: float
-                length: float
-                width: float
-                dimension_units: ('inches', 'centimeters', 'feet', 'meters')
-                weight_units: ('grams', 'pounds', 'kilograms', 'onces')
-                name: Sting
-            ]
-            'package_contents': List[Dict[
+           'package_contents': List[Dict[
                 skus_packed: Dict[sku, quantity]
                 total_weight: float
-            ],
-            'last_parcel': Dict[
-                weight: float
-                height: float
-                length: float
-                width: float
-                dimension_units: ('inches', 'centimeters', 'feet', 'meters')
-                weight_units: ('grams', 'pounds', 'kilograms', 'onces')
-                name: Sting
+                box: Dict[
+                    weight: float
+                    height: float
+                    length: float
+                    width: float
+                    dimension_units: ('inches', 'centimeters', 'feet', 'meters')
+                    weight_units: ('grams', 'pounds', 'kilograms', 'onces')
+                    name: String
+                ]
             ]
         ]
     '''

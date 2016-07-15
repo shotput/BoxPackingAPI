@@ -252,10 +252,11 @@ def api_packing_algorithm(boxes_info, skus_info, options):
     for i, parcel in enumerate(package_contents_dict):
         if i == len(package_contents_dict) - 1 and last_parcel is not None:
             selected_box = last_parcel
+            total_weight = package_info.last_parcel.weight_g
         else:
             selected_box = best_box
+            total_weight = package_info.box.weight_g
         skus_packed = {}
-        total_weight = selected_box.weight_g
         for sku, info in parcel.iteritems():
             skus_packed[sku] = info['quantity']
             total_weight += info['quantity'] * info['sku'].weight
@@ -341,7 +342,7 @@ def pre_pack_boxes(box_info, skus_info, options):
                         skus[-1].weight <= max_weight):
                     additional_box.append(skus.pop())
                 else:
-                    skus_packed.append([sku for sku in additional_box])
+                    skus_packed.append(list(additional_box))
                     additional_box = [skus.pop()]
         skus_packed.append(additional_box)
 

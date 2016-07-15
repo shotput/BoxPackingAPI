@@ -68,6 +68,12 @@ def shotput_packing_algorithm(session, team, qty_per_sku, flat_rate_okay=False,
         zone (int): usps regional shipping zone based on shotput Warehouse
         preferred_max_weight (int): max weight of a parcel if not 70lbs
 
+    Returns:
+        Dict[{
+            package (Packaging[ShippingBox, List[List], ShippingBox]
+            flat_rate (Packaging[ShippingBox, List[List], ShippingBox]
+        }]
+
     Example:
     >>> shotput_packing_algorithm(session, team1, {sku1: 1, sku2: 3}, True)
     {
