@@ -2,7 +2,7 @@ from fulfillment_api.authentication.shipping_box import ShippingBox
 from fulfillment_api.constants import usps_shipping
 from fulfillment_api.errors import BoxError
 import fulfillment_api.messages as msg
-from .packing_algorithm import packing_algorithm, does_it_fit, SkuTuple
+from .packing_algorithm import does_it_fit, packing_algorithm, SkuTuple
 
 from itertools import izip
 from sqlalchemy import or_

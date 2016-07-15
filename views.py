@@ -1,8 +1,8 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, current_app, jsonify, request
 from fulfillment_api import messages as msg
 from fulfillment_api.errors import BoxError
-from .helper import (compare_1000_times, api_packing_algorithm,
-    space_after_packing, how_many_skus_fit, pre_pack_boxes)
+from .helper import (api_packing_algorithm, compare_1000_times,
+                     how_many_skus_fit, pre_pack_boxes, space_after_packing)
 
 from ..authentication.login_required import (login_required,
                                              shotput_permission_required)

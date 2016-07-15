@@ -4,9 +4,9 @@ from fulfillment_api.errors import BoxError
 from fulfillment_api.util.unit_conversion import (convert_dimensional_units,
                                                   convert_mass_units)
 
-from .packing_algorithm import (packing_algorithm, does_it_fit, SkuTuple,
-                                volume, pack_boxes, best_fit,
-                                insert_skus_into_dimensions)
+from .packing_algorithm import (best_fit, does_it_fit,
+                                insert_skus_into_dimensions, pack_boxes,
+                                packing_algorithm, SkuTuple, volume)
 
 from collections import Counter
 from itertools import izip
