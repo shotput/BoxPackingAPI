@@ -11,7 +11,7 @@ from ..crossdomain import crossdomain
 blueprint = Blueprint('box_packing', __name__)
 
 
-@blueprint.route('/box_packing_api/simple',
+@blueprint.route('/box_packing_api/basic',
                  methods=['POST', 'OPTIONS'])
 @crossdomain(api=True)
 @login_required
