@@ -417,9 +417,9 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
         requires_fewer_boxes = (len(packed_skus) < min_boxes_by_volume
                             if min_boxes_by_volume is not None else True)
         if (requires_fewer_boxes or current_best_box is None or
+                is_flat_rate or
                 (len(packed_skus) == min_boxes_by_volume and
-                    current_best_box.total_cubic_cm > box.total_cubic_cm) or
-                is_flat_rate):
+                    current_best_box.total_cubic_cm > box.total_cubic_cm)):
             min_boxes_by_volume = len(packed_skus)
             if is_flat_rate:
                 best_flat_rate_box = compare_flat_rate_prices(zone, box,
