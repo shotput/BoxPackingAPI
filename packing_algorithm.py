@@ -195,7 +195,7 @@ def best_fit(sku_dims, box_dims):
             if b_dim >= sku_dims[2]:
                 side_1 = i
                 block_1 = sorted([box_dims[side_1] - sku_dims[2],
-                                  sku_dims[1], sku_dims[2]])
+                                  sku_dims[1], sku_dims[0]])
                 blocks.append(block_1)
                 break
 
