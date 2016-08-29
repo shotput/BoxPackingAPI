@@ -371,14 +371,19 @@ def setup_box_dictionary(packed_boxes, zone=None):
         if box_efficiently_packs:
             if is_flat_rate:
                 if best_flat_rate_box is None or len(packed_skus) < min_boxes:
+                    # if there is no flat rate box set or this is more effient
                     best_flat_rate_box = box
                 else:
+                    # check to see which one is cheapest
                     best_flat_rate_box = compare_flat_rate_prices(
                         zone, box, best_flat_rate_box)
                 num_flat_rates_required = len(packed_skus)
             elif (best_standard_box is None or min_boxes > len(packed_skus) or
                     (box.total_cubic_cm < best_standard_box.total_cubic_cm and
                      min_boxes == len(packed_skus))):
+                # if there is no standard box set, or there its more efficient,
+                # of if the box is smaller AND is equally efficient as the best
+                # box, set the current box as the best box
                 best_standard_box = box
                 num_packages_required = len(packed_skus)
 
@@ -386,13 +391,16 @@ def setup_box_dictionary(packed_boxes, zone=None):
     if (best_flat_rate_box is not None and
             (best_standard_box is None or
             (num_packages_required >= num_flat_rates_required))):
+        # if there is a flat rate option that is at least as effient as the
+        # package option, add it to the dictionary
         box_dictionary['flat_rate'] = Packaging(best_flat_rate_box,
-                                                packed_boxes[
-                                                    best_flat_rate_box],
-                                                None)
+            packed_boxes[best_flat_rate_box], None)
+
     if (best_standard_box is not None and
             (best_flat_rate_box is None or
-                (num_packages_required <= num_flat_rates_required))):
+            (num_packages_required <= num_flat_rates_required))):
+        # if there is a package option that is as least as efficient as the
+        # flat rate option, add it to the dictionary
         box_dictionary['package'] = Packaging(best_standard_box,
             packed_boxes.get(best_standard_box), None)
     return box_dictionary
