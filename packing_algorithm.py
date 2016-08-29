@@ -360,14 +360,16 @@ def setup_box_dictionary(packed_boxes, zone=None):
     # determine best flat rate and best package
     for box, packed_skus in packed_boxes.iteritems():
         is_flat_rate = box.description in usps_shipping.USPS_BOXES
-        current_best_box = (best_flat_rate_box if is_flat_rate else
-                            best_standard_box)
-        min_boxes = (num_flat_rates_required if is_flat_rate else
-                     num_packages_required)
-        requires_fewer_or_same_boxes = (len(packed_skus) <= min_boxes
-                                        if min_boxes is not None else True)
 
-        if requires_fewer_or_same_boxes or current_best_box is None:
+        # reference the correct box type - flat rate or package
+        current_best_box, min_boxes = (
+            (best_flat_rate_box, num_flat_rates_required) if is_flat_rate else
+            (best_standard_box, num_packages_required))
+
+        box_efficiently_packs = (len(packed_skus) <= min_boxes
+                                 if min_boxes is not None else True)
+
+        if box_efficiently_packs or current_best_box is None:
             if is_flat_rate:
                 if current_best_box is None or len(packed_skus) < min_boxes:
                     best_flat_rate_box = box
@@ -378,6 +380,7 @@ def setup_box_dictionary(packed_boxes, zone=None):
             else:
                 best_standard_box = (box
                     if (current_best_box is None or
+                        min_boxes > len(packed_skus) or
                         box.total_cubic_cm < current_best_box.total_cubic_cm)
                     else current_best_box)
                 num_packages_required = len(packed_skus)
