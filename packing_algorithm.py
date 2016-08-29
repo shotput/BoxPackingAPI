@@ -369,7 +369,7 @@ def setup_box_dictionary(packed_boxes, zone=None):
         box_efficiently_packs = (len(packed_skus) <= min_boxes
                                  if min_boxes is not None else True)
 
-        if box_efficiently_packs or current_best_box is None:
+        if box_efficiently_packs:
             if is_flat_rate:
                 if current_best_box is None or len(packed_skus) < min_boxes:
                     best_flat_rate_box = box
@@ -378,12 +378,10 @@ def setup_box_dictionary(packed_boxes, zone=None):
                         zone, box, current_best_box)
                 num_flat_rates_required = len(packed_skus)
             else:
-                best_standard_box = (box
-                    if (current_best_box is None or
-                        min_boxes > len(packed_skus) or
-                        box.total_cubic_cm < current_best_box.total_cubic_cm)
-                    else current_best_box)
-                num_packages_required = len(packed_skus)
+                if (current_best_box is None or min_boxes > len(packed_skus) or
+                        box.total_cubic_cm < current_best_box.total_cubic_cm):
+                    best_standard_box = box
+                    num_packages_required = len(packed_skus)
 
     # set up box dictionary
     if (best_flat_rate_box is not None and
