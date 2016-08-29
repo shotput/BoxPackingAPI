@@ -362,26 +362,24 @@ def setup_box_dictionary(packed_boxes, zone=None):
         is_flat_rate = box.description in usps_shipping.USPS_BOXES
 
         # reference the correct box type - flat rate or package
-        current_best_box, min_boxes = (
-            (best_flat_rate_box, num_flat_rates_required) if is_flat_rate else
-            (best_standard_box, num_packages_required))
+        min_boxes = (num_flat_rates_required if is_flat_rate else
+                     num_packages_required)
 
         box_efficiently_packs = (len(packed_skus) <= min_boxes
                                  if min_boxes is not None else True)
 
         if box_efficiently_packs:
             if is_flat_rate:
-                if current_best_box is None or len(packed_skus) < min_boxes:
+                if best_flat_rate_box is None or len(packed_skus) < min_boxes:
                     best_flat_rate_box = box
                 else:
                     best_flat_rate_box = compare_flat_rate_prices(
-                        zone, box, current_best_box)
+                        zone, box, best_flat_rate_box)
                 num_flat_rates_required = len(packed_skus)
-            else:
-                if (current_best_box is None or min_boxes > len(packed_skus) or
-                        box.total_cubic_cm < current_best_box.total_cubic_cm):
-                    best_standard_box = box
-                    num_packages_required = len(packed_skus)
+            elif (best_standard_box is None or min_boxes > len(packed_skus) or
+                    box.total_cubic_cm < best_standard_box.total_cubic_cm):
+                best_standard_box = box
+                num_packages_required = len(packed_skus)
 
     # set up box dictionary
     if (best_flat_rate_box is not None and
