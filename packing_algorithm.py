@@ -51,6 +51,7 @@ data path:
 from collections import namedtuple
 
 from fulfillment_api.constants import usps_shipping
+from fulfillment_api.errors import BoxError
 
 from itertools import izip
 
@@ -347,6 +348,8 @@ def compare_flat_rate_prices(zone, box, best_flat_rate_box):
 
 
 def setup_box_dictionary(packed_boxes, zone=None):
+    if len(packed_boxes) == 0:
+        raise BoxError('There are no packed boxes available to return.')
     box_dictionary = {
         'package': None,
         'flat_rate': None
