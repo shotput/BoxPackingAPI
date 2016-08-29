@@ -406,29 +406,33 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
         'package': None,
         'flat_rate': None
     }
-    min_boxes_by_volume = None
+
     best_standard_box = None
     best_flat_rate_box = None
+    num_packages_required = None
+    num_flat_rates_required = None
 
     for box, packed_skus in packed_boxes.iteritems():
         is_flat_rate = box.description in usps_shipping.USPS_BOXES
         current_best_box = (best_flat_rate_box if is_flat_rate else
                             best_standard_box)
-        requires_fewer_boxes = (len(packed_skus) < min_boxes_by_volume
-                            if min_boxes_by_volume is not None else True)
-        if (requires_fewer_boxes or current_best_box is None or is_flat_rate or
-                (len(packed_skus) == min_boxes_by_volume and
-                    current_best_box.total_cubic_cm > box.total_cubic_cm)):
-            min_boxes_by_volume = len(packed_skus)
+        min_boxes = (num_flat_rates_required if is_flat_rate else
+                     num_packages_required)
+        requires_fewer_boxes = (len(packed_skus) < min_boxes
+                                if min_boxes is not None else True)
+        if (requires_fewer_boxes or current_best_box is None or
+                (len(packed_skus) == min_boxes and
+                 current_best_box.total_cubic_cm > box.total_cubic_cm)):
             if is_flat_rate:
-                best_flat_rate_box = compare_flat_rate_prices(zone, box,
-                                                              current_best_box)
+                best_flat_rate_box = (compare_flat_rate_prices(zone, box,
+                                                               current_best_box)
+                                      if min_boxes > len(packed_skus) else
+                                      current_best_box)
                 num_flat_rates_required = len(packed_skus)
             else:
                 best_standard_box = box
                 num_packages_required = len(packed_skus)
     # set up box dictionary
-
     if (best_flat_rate_box is not None and
             (best_standard_box is None or
             (num_packages_required >= num_flat_rates_required))):
