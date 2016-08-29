@@ -377,7 +377,8 @@ def setup_box_dictionary(packed_boxes, zone=None):
                         zone, box, best_flat_rate_box)
                 num_flat_rates_required = len(packed_skus)
             elif (best_standard_box is None or min_boxes > len(packed_skus) or
-                    box.total_cubic_cm < best_standard_box.total_cubic_cm):
+                    (box.total_cubic_cm < best_standard_box.total_cubic_cm and
+                     min_boxes == len(packed_skus))):
                 best_standard_box = box
                 num_packages_required = len(packed_skus)
 
