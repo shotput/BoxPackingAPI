@@ -389,8 +389,12 @@ def setup_box_dictionary(packed_boxes, zone=None):
                 # box, set the current box as the best box
                 best_standard_box = box
                 num_packages_required = len(packed_skus)
-            # else the box is neither smaller, nor packs better
-        # else the box doesn't pack efficently and we don't want it
+            else:
+                # the box is neither smaller, nor packs better
+                continue
+        else:
+            # the box doesn't pack efficently and we don't want it
+            continue
 
     # set up box dictionary
     if (best_flat_rate_box is not None and
@@ -400,8 +404,10 @@ def setup_box_dictionary(packed_boxes, zone=None):
         # package option, add it to the dictionary
         box_dictionary['flat_rate'] = Packaging(best_flat_rate_box,
             packed_boxes[best_flat_rate_box], None)
-    # else there is no flat rate box which packs as effiently as the ideal
-    # standard box so it does not go on the box dictionary
+    else:
+        # there is no flat rate box which packs as effiently as the ideal
+        # standard box so it does not go on the box dictionary
+        pass
 
     if (best_standard_box is not None and
             (best_flat_rate_box is None or
@@ -410,8 +416,10 @@ def setup_box_dictionary(packed_boxes, zone=None):
         # flat rate option, add it to the dictionary
         box_dictionary['package'] = Packaging(best_standard_box,
             packed_boxes.get(best_standard_box), None)
-    # else there is no standard box that packs as efficiently as the ideal flat
-    # rate box and it should not be added to the box dictionary
+    else:
+        # there is no standard box that packs as efficiently as the ideal flat
+        # rate box and it should not be added to the box dictionary
+        pass
     return box_dictionary
 
 
