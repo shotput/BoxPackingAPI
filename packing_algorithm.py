@@ -347,13 +347,41 @@ def compare_flat_rate_prices(zone, box, best_flat_rate_box):
     return best_flat_rate_box if box_cost > best_box_cost else box
 
 
-def setup_box_dictionary(packed_boxes, zone=None):
-    if len(packed_boxes) == 0:
-        raise BoxError('There are no packed boxes available to return.')
+def setup_box_dictionary(best_standard_box, best_flat_rate_box, packed_boxes):
+
     box_dictionary = {
         'package': None,
         'flat_rate': None
     }
+
+    standard_packing = packed_boxes.get(best_standard_box)
+    flat_rate_packing = packed_boxes.get(best_flat_rate_box)
+
+    if (best_flat_rate_box is not None and
+            (best_standard_box is None or
+            (len(standard_packing) >= len(flat_rate_packing)))):
+        # if there is a flat rate option that is at least as effient as the
+        # package option, add it to the dictionary
+        box_dictionary['flat_rate'] = Packaging(best_flat_rate_box,
+            packed_boxes[best_flat_rate_box], None)
+    # else there is no flat rate box which packs as effiently as the ideal
+    # standard box so it does not go on the box dictionary
+
+    if (best_standard_box is not None and
+            (best_flat_rate_box is None or
+            (len(standard_packing) <= len(flat_rate_packing)))):
+        # if there is a package option that is as least as efficient as the
+        # flat rate option, add it to the dictionary
+        box_dictionary['package'] = Packaging(best_standard_box,
+            packed_boxes.get(best_standard_box), None)
+    # else there is no standard box that packs as efficiently as the ideal flat
+    # rate box and it should not be added to the box dictionary
+    return box_dictionary
+
+
+def get_best_boxes(packed_boxes, zone=None):
+    if len(packed_boxes) == 0:
+        raise BoxError('There are no packed boxes available to return.')
 
     best_standard_box = None
     best_flat_rate_box = None
@@ -394,31 +422,8 @@ def setup_box_dictionary(packed_boxes, zone=None):
             elif box.total_cubic_cm < best_standard_box.total_cubic_cm:
                 best_standard_box = box
             # else the box is not smaller
-        else:
-            # the box does not pack better
-            continue
-
-    # set up box dictionary
-    if (best_flat_rate_box is not None and
-            (best_standard_box is None or
-            (num_packages_required >= num_flat_rates_required))):
-        # if there is a flat rate option that is at least as effient as the
-        # package option, add it to the dictionary
-        box_dictionary['flat_rate'] = Packaging(best_flat_rate_box,
-            packed_boxes[best_flat_rate_box], None)
-    # else there is no flat rate box which packs as effiently as the ideal
-    # standard box so it does not go on the box dictionary
-
-    if (best_standard_box is not None and
-            (best_flat_rate_box is None or
-            (num_packages_required <= num_flat_rates_required))):
-        # if there is a package option that is as least as efficient as the
-        # flat rate option, add it to the dictionary
-        box_dictionary['package'] = Packaging(best_standard_box,
-            packed_boxes.get(best_standard_box), None)
-    # else there is no standard box that packs as efficiently as the ideal flat
-    # rate box and it should not be added to the box dictionary
-    return box_dictionary
+        # else the box does not pack better
+    return best_standard_box, best_flat_rate_box
 
 
 def packing_algorithm(unordered_skus, useable_boxes, max_weight,
@@ -477,7 +482,9 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
             packed_skus.append(additional_box)
         packed_boxes[box_dict['box']] = packed_skus
 
-    box_dictionary = setup_box_dictionary(packed_boxes, zone)
+    best_standard_box, best_flat_rate_box = get_best_boxes(packed_boxes, zone)
+    box_dictionary = setup_box_dictionary(best_standard_box, best_flat_rate_box,
+                                          packed_boxes)
 
     # repack the last parcel into a smaller box
     if (box_dictionary['package'] is not None and
