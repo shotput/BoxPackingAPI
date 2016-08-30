@@ -401,8 +401,8 @@ def get_best_boxes(packed_boxes, zone=None):
         box_packs_better = (len(packed_skus) < min_boxes
                             if min_boxes is not None else True)
 
-        box_packs_same = (len(packed_skus) == min_boxes
-                          if min_boxes is not None else True)
+        if not box_packs_better:
+            box_packs_same = len(packed_skus) == min_boxes
 
         if box_packs_better:
             # set the new best box
