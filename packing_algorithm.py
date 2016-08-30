@@ -371,9 +371,12 @@ def setup_box_dictionary(packed_boxes, zone=None):
         box_efficiently_packs = (len(packed_skus) <= min_boxes
                                  if min_boxes is not None else True)
 
+        box_packs_better = (len(packed_skus) < min_boxes
+                            if min_boxes is not None else True)
+
         if box_efficiently_packs:
             if is_flat_rate:
-                if best_flat_rate_box is None or len(packed_skus) < min_boxes:
+                if best_flat_rate_box is None or box_packs_better:
                     # if there is no flat rate box set or this is more effient
                     best_flat_rate_box = box
                 else:
@@ -381,7 +384,7 @@ def setup_box_dictionary(packed_boxes, zone=None):
                     best_flat_rate_box = compare_flat_rate_prices(
                         zone, box, best_flat_rate_box)
                 num_flat_rates_required = len(packed_skus)
-            elif (best_standard_box is None or min_boxes > len(packed_skus) or
+            elif (best_standard_box is None or box_packs_better or
                     (box.total_cubic_cm < best_standard_box.total_cubic_cm and
                      min_boxes == len(packed_skus))):
                 # if there is no standard box set, or there its more efficient,
