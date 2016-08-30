@@ -368,33 +368,35 @@ def setup_box_dictionary(packed_boxes, zone=None):
         min_boxes = (num_flat_rates_required if is_flat_rate else
                      num_packages_required)
 
-        box_efficiently_packs = (len(packed_skus) <= min_boxes
-                                 if min_boxes is not None else True)
-
+        # if there are no boxes set, min boxes will be None,
+        # and box_packs_better will be True
         box_packs_better = (len(packed_skus) < min_boxes
                             if min_boxes is not None else True)
 
-        if box_efficiently_packs:
+        if not box_packs_better:
+            box_packs_same = len(packed_skus) == min_boxes
+
+        if box_packs_better:
+            # set the new best box
             if is_flat_rate:
-                if best_flat_rate_box is None or box_packs_better:
-                    # if there is no flat rate box set or this is more effient
-                    best_flat_rate_box = box
-                else:
-                    # check to see which one is cheapest
-                    best_flat_rate_box = compare_flat_rate_prices(
-                        zone, box, best_flat_rate_box)
+                # if there is no flat rate box set or this is more effient
+                best_flat_rate_box = box
                 num_flat_rates_required = len(packed_skus)
-            elif (best_standard_box is None or box_packs_better or
-                    (box.total_cubic_cm < best_standard_box.total_cubic_cm and
-                     min_boxes == len(packed_skus))):
-                # if there is no standard box set, or there its more efficient,
-                # of if the box is smaller AND is equally efficient as the best
-                # box, set the current box as the best box
+            else:
                 best_standard_box = box
                 num_packages_required = len(packed_skus)
-            else:
-                # the box is neither smaller, nor packs better
-                continue
+        elif box_packs_same:
+            # check a few comparisons
+            if is_flat_rate:
+                # check to see which one is cheapest
+                best_flat_rate_box = compare_flat_rate_prices(
+                    zone, box, best_flat_rate_box)
+            elif box.total_cubic_cm < best_standard_box.total_cubic_cm:
+                best_standard_box = box
+            # else the box is not smaller
+        else:
+            # the box does not pack better
+            continue
 
     # set up box dictionary
     if (best_flat_rate_box is not None and
