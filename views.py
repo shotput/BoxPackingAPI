@@ -1,5 +1,6 @@
 from flask import Blueprint, current_app, jsonify, request
 from fulfillment_api import messages as msg
+from fulfillment_api.constants import api_settings
 from fulfillment_api.errors import BoxError
 from .helper import (api_packing_algorithm, compare_1000_times,
                      how_many_skus_fit, pre_pack_boxes, space_after_packing)
@@ -13,7 +14,7 @@ blueprint = Blueprint('box_packing', __name__)
 
 @blueprint.route('/box_packing_api/basic',
                  methods=['POST', 'OPTIONS'])
-@crossdomain(cross_origin=True)
+@crossdomain(cross_origin=True, api=api_settings.BOX_PACKING)
 @login_required
 def get_best_fit():
     '''
@@ -55,7 +56,7 @@ def get_best_fit():
 
 @blueprint.route('/box_packing_api/remaining_volume',
                  methods=['POST', 'OPTIONS'])
-@crossdomain(cross_origin=True)
+@crossdomain(cross_origin=True, api=api_settings.BOX_PACKING)
 @login_required
 def get_space_after_packing():
     '''
@@ -106,7 +107,7 @@ def get_space_after_packing():
 
 
 @blueprint.route('/box_packing_api/capacity', methods=['POST', 'OPTIONS'])
-@crossdomain(cross_origin=True)
+@crossdomain(cross_origin=True, api=api_settings.BOX_PACKING)
 @login_required
 def how_many_fit():
     '''
@@ -159,7 +160,7 @@ def compare_pack():
 
 
 @blueprint.route('/box_packing_api/full', methods=['POST', 'OPTIONS'])
-@crossdomain(cross_origin=True)
+@crossdomain(cross_origin=True, api=api_settings.BOX_PACKING)
 @login_required
 def box_packing_api():
     '''
