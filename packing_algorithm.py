@@ -347,83 +347,64 @@ def compare_flat_rate_prices(zone, box, best_flat_rate_box):
     return best_flat_rate_box if box_cost > best_box_cost else box
 
 
-def setup_box_dictionary(best_standard_box, best_flat_rate_box, packed_boxes):
-
-    box_dictionary = {
-        'package': None,
-        'flat_rate': None
-    }
-
-    standard_packing = packed_boxes.get(best_standard_box)
-    flat_rate_packing = packed_boxes.get(best_flat_rate_box)
-
-    if (best_flat_rate_box is not None and
-            (best_standard_box is None or
-            (len(standard_packing) >= len(flat_rate_packing)))):
-        # if there is a flat rate option that is at least as effient as the
-        # package option, add it to the dictionary
-        box_dictionary['flat_rate'] = Packaging(best_flat_rate_box,
-            packed_boxes[best_flat_rate_box], None)
-    # else there is no flat rate box which packs as effiently as the ideal
-    # standard box so it does not go on the box dictionary
-
-    if (best_standard_box is not None and
-            (best_flat_rate_box is None or
-            (len(standard_packing) <= len(flat_rate_packing)))):
-        # if there is a package option that is as least as efficient as the
-        # flat rate option, add it to the dictionary
-        box_dictionary['package'] = Packaging(best_standard_box,
-            packed_boxes.get(best_standard_box), None)
-    # else there is no standard box that packs as efficiently as the ideal flat
-    # rate box and it should not be added to the box dictionary
-    return box_dictionary
-
-
-def get_best_boxes(packed_boxes, zone=None):
+def setup_box_dictionary(packed_boxes, zone=None):
     if len(packed_boxes) == 0:
         raise BoxError('There are no packed boxes available to return.')
-
-    best_standard_box = None
-    best_flat_rate_box = None
-    num_packages_required = None
-    num_flat_rates_required = None
-
+    best_boxes = {
+        'flat_rate': {},
+        'package': {}
+    }
+    box_dictionary = {
+        'flat_rate': None,
+        'package': None
+    }
     # determine best flat rate and best package
     for box, packed_skus in packed_boxes.iteritems():
         is_flat_rate = box.description in usps_shipping.USPS_BOXES
-
-        # reference the correct box type - flat rate or package
-        min_boxes = (num_flat_rates_required if is_flat_rate else
-                     num_packages_required)
+        key = 'flat_rate' if is_flat_rate else 'package'
+        min_boxes = best_boxes[key].get('num_parcels')
 
         # if there are no boxes set, min boxes will be None,
         # and box_packs_better will be True
         box_packs_better = (len(packed_skus) < min_boxes
                             if min_boxes is not None else True)
 
-        if not box_packs_better:
-            box_packs_same = len(packed_skus) == min_boxes
+        box_packs_same = (len(packed_skus) == min_boxes
+                          if min_boxes is not None else True)
 
         if box_packs_better:
             # set the new best box
-            if is_flat_rate:
-                # if there is no flat rate box set or this is more effient
-                best_flat_rate_box = box
-                num_flat_rates_required = len(packed_skus)
-            else:
-                best_standard_box = box
-                num_packages_required = len(packed_skus)
+            best_boxes[key] = {
+                'box': box,
+                'num_parcels': len(packed_skus)
+            }
         elif box_packs_same:
             # check a few comparisons
             if is_flat_rate:
                 # check to see which one is cheapest
-                best_flat_rate_box = compare_flat_rate_prices(
-                    zone, box, best_flat_rate_box)
-            elif box.total_cubic_cm < best_standard_box.total_cubic_cm:
-                best_standard_box = box
+                best_flat_rate = compare_flat_rate_prices(
+                    zone, box, best_boxes[key]['box'])
+                best_boxes[key]['box'] = best_flat_rate
+
+            elif box.total_cubic_cm < best_boxes[key]['box'].total_cubic_cm:
+                best_boxes[key]['box'] = box
             # else the box is not smaller
         # else the box does not pack better
-    return best_standard_box, best_flat_rate_box
+    # set up box dictionary
+    best_flat_rate = best_boxes['flat_rate']
+    best_package = best_boxes['package']
+    if (best_package != {} and
+            (best_flat_rate == {} or
+            best_package['num_parcels'] <= best_flat_rate['num_parcels'])):
+        box_dictionary['package'] = Packaging(best_package['box'],
+            packed_boxes[best_package['box']], None)
+
+    if (best_flat_rate != {} and
+            (best_package == {} or
+            best_flat_rate['num_parcels'] <= best_package['num_parcels'])):
+        box_dictionary['flat_rate'] = Packaging(best_flat_rate['box'],
+            packed_boxes[best_flat_rate['box']], None)
+    return box_dictionary
 
 
 def packing_algorithm(unordered_skus, useable_boxes, max_weight,
@@ -482,9 +463,7 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
             packed_skus.append(additional_box)
         packed_boxes[box_dict['box']] = packed_skus
 
-    best_standard_box, best_flat_rate_box = get_best_boxes(packed_boxes, zone)
-    box_dictionary = setup_box_dictionary(best_standard_box, best_flat_rate_box,
-                                          packed_boxes)
+    box_dictionary = setup_box_dictionary(packed_boxes, zone)
 
     # repack the last parcel into a smaller box
     if (box_dictionary['package'] is not None and
