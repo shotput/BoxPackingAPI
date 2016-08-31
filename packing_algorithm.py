@@ -354,10 +354,6 @@ def setup_box_dictionary(packed_boxes, zone=None):
         'flat_rate': {},
         'package': {}
     }
-    box_dictionary = {
-        'flat_rate': None,
-        'package': None
-    }
     # determine best flat rate and best package
     for box, packed_skus in packed_boxes.iteritems():
         is_flat_rate = box.description in usps_shipping.USPS_BOXES
@@ -382,24 +378,28 @@ def setup_box_dictionary(packed_boxes, zone=None):
             # check a few comparisons
             if is_flat_rate:
                 # check to see which one is cheapest
-                best_flat_rate = compare_flat_rate_prices(
+                best_boxes[key]['box'] = compare_flat_rate_prices(
                     zone, box, best_boxes[key]['box'])
-                best_boxes[key]['box'] = best_flat_rate
 
             elif box.total_cubic_cm < best_boxes[key]['box'].total_cubic_cm:
                 best_boxes[key]['box'] = box
             # else the box is not smaller
         # else the box does not pack better
+
     # set up box dictionary
+    box_dictionary = {
+        'flat_rate': None,
+        'package': None
+    }
     best_flat_rate = best_boxes['flat_rate']
     best_package = best_boxes['package']
-    if (best_package != {} and
+    if (len(best_package) > 0 and
             (best_flat_rate == {} or
             best_package['num_parcels'] <= best_flat_rate['num_parcels'])):
         box_dictionary['package'] = Packaging(best_package['box'],
             packed_boxes[best_package['box']], None)
 
-    if (best_flat_rate != {} and
+    if (if len(best_flat_rate) > 0 and
             (best_package == {} or
             best_flat_rate['num_parcels'] <= best_package['num_parcels'])):
         box_dictionary['flat_rate'] = Packaging(best_flat_rate['box'],
