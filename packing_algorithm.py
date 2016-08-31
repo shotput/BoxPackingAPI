@@ -399,7 +399,7 @@ def setup_box_dictionary(packed_boxes, zone=None):
         box_dictionary['package'] = Packaging(best_package['box'],
             packed_boxes[best_package['box']], None)
 
-    if (if len(best_flat_rate) > 0 and
+    if (len(best_flat_rate) > 0 and
             (len(best_package) == 0 or
             best_flat_rate['num_parcels'] <= best_package['num_parcels'])):
         box_dictionary['flat_rate'] = Packaging(best_flat_rate['box'],
