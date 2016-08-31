@@ -350,15 +350,12 @@ def compare_flat_rate_prices(zone, box, best_flat_rate_box):
 def setup_box_dictionary(packed_boxes, zone=None):
     if len(packed_boxes) == 0:
         raise BoxError('There are no packed boxes available to return.')
-    best_boxes = {
-        'flat_rate': {},
-        'package': {}
-    }
+    best_boxes = {}
     # determine best flat rate and best package
     for box, packed_skus in packed_boxes.iteritems():
         is_flat_rate = box.description in usps_shipping.USPS_BOXES
         key = 'flat_rate' if is_flat_rate else 'package'
-        min_boxes = best_boxes[key].get('num_parcels')
+        min_boxes = best_boxes.get(key, {}).get('num_parcels')
 
         # if there are no boxes set, min boxes will be None,
         # and box_packs_better will be True
@@ -391,16 +388,16 @@ def setup_box_dictionary(packed_boxes, zone=None):
         'flat_rate': None,
         'package': None
     }
-    best_flat_rate = best_boxes['flat_rate']
-    best_package = best_boxes['package']
-    if (len(best_package) > 0 and
-            (len(best_flat_rate) == 0 or
+    best_flat_rate = best_boxes.get('flat_rate')
+    best_package = best_boxes.get('package')
+    if (best_package is not None and
+            (best_flat_rate is None or
             best_package['num_parcels'] <= best_flat_rate['num_parcels'])):
         box_dictionary['package'] = Packaging(best_package['box'],
             packed_boxes[best_package['box']], None)
 
-    if (len(best_flat_rate) > 0 and
-            (len(best_package) == 0 or
+    if (best_flat_rate is not None and
+            (best_package is None or
             best_flat_rate['num_parcels'] <= best_package['num_parcels'])):
         box_dictionary['flat_rate'] = Packaging(best_flat_rate['box'],
             packed_boxes[best_flat_rate['box']], None)
