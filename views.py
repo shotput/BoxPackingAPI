@@ -14,7 +14,7 @@ blueprint = Blueprint('box_packing', __name__)
 
 @blueprint.route('/box_packing_api/basic',
                  methods=['POST', 'OPTIONS'])
-@crossdomain(api=True, api=api_settings.BOX_PACKING)
+@crossdomain(api=True)
 @login_required
 def get_best_fit():
     '''
@@ -56,7 +56,7 @@ def get_best_fit():
 
 @blueprint.route('/box_packing_api/remaining_volume',
                  methods=['POST', 'OPTIONS'])
-@crossdomain(api=True, api=api_settings.BOX_PACKING)
+@crossdomain(api=True)
 @login_required
 def get_space_after_packing():
     '''
@@ -107,7 +107,7 @@ def get_space_after_packing():
 
 
 @blueprint.route('/box_packing_api/capacity', methods=['POST', 'OPTIONS'])
-@crossdomain(api=True, api=api_settings.BOX_PACKING)
+@crossdomain(api=True)
 @login_required
 def how_many_fit():
     '''
@@ -160,7 +160,7 @@ def compare_pack():
 
 
 @blueprint.route('/box_packing_api/full', methods=['POST', 'OPTIONS'])
-@crossdomain(api=True, api=api_settings.BOX_PACKING)
+@crossdomain(api=True)
 @login_required
 def box_packing_api():
     '''
