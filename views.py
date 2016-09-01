@@ -1,6 +1,5 @@
 from flask import Blueprint, current_app, jsonify, request
 from fulfillment_api import messages as msg
-from fulfillment_api.constants import api_settings
 from fulfillment_api.errors import BoxError
 from .helper import (api_packing_algorithm, compare_1000_times,
                      how_many_skus_fit, pre_pack_boxes, space_after_packing)
@@ -60,6 +59,7 @@ def get_best_fit():
                  methods=['POST', 'OPTIONS'])
 @crossdomain(api=True)
 @login_required
+@verify_box_api
 def get_space_after_packing():
     '''
     Non-database calling endpoint which calculates the remaining volume in a
@@ -111,6 +111,7 @@ def get_space_after_packing():
 @blueprint.route('/box_packing_api/capacity', methods=['POST', 'OPTIONS'])
 @crossdomain(api=True)
 @login_required
+@verify_box_api
 def how_many_fit():
     '''
     non-database hitting endpoint which calculates the capacity of a box
@@ -164,6 +165,7 @@ def compare_pack():
 @blueprint.route('/box_packing_api/full', methods=['POST', 'OPTIONS'])
 @crossdomain(api=True)
 @login_required
+@verify_box_api
 def box_packing_api():
     '''
     a full access endpoint to the box algorithm, which accepts boxes and skus
