@@ -8,6 +8,7 @@ from .helper import (api_packing_algorithm, compare_1000_times,
 from ..authentication.login_required import (login_required,
                                              shotput_permission_required)
 from ..crossdomain import crossdomain
+from fulfillment_api.api_verify import verify_box_api
 
 blueprint = Blueprint('box_packing', __name__)
 
@@ -16,6 +17,7 @@ blueprint = Blueprint('box_packing', __name__)
                  methods=['POST', 'OPTIONS'])
 @crossdomain(api=True)
 @login_required
+@verify_box_api
 def get_best_fit():
     '''
     A non-database calling endpoint which is a simple usage of the box packing
