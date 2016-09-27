@@ -421,6 +421,9 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
         min_boxes_by_weight (Int)
         zone (Int?)
 
+    Raises:
+        BoxError when no box could fit some SKU.
+
     Example:
     >>> packing_algorithm([sku1, sku2], [], {sku1: 1, sku2: 3}, True)
     {
