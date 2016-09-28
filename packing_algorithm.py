@@ -316,9 +316,9 @@ def pack_boxes(box_dimensions, skus_to_pack):
             remaining_dimensions = [box_dimensions]
             if len(skus_packed) == 0 or len(skus_packed[-1]) > 0:
                 skus_packed.append([])
-            elif len(skus_packed[-1]) == 0:
-                skus_packed.pop()
-                break
+            # elif len(skus_packed[-1]) == 0:
+            #     skus_packed.pop()
+            #     break
         # iterate through remaining dimensions to pack boxes
         for block in remaining_dimensions:
             remaining_dimensions, skus_packed = insert_skus_into_dimensions(
