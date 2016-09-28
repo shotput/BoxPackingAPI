@@ -48,12 +48,13 @@ data path:
 [1] - http://www.jstor.org/stable/pdf/223143.pdf, page 257
 '''
 
-from collections import namedtuple
-
 from fulfillment_api.constants import usps_shipping
 from fulfillment_api.errors import BoxError
 
+from collections import namedtuple
 from itertools import izip
+
+from flask import current_app
 
 
 Packaging = namedtuple('Package', 'box, skus_per_box, last_parcel')
@@ -440,7 +441,8 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
     skus_to_pack = sorted(unordered_skus, key=lambda sku: sku.dimensions[2],
                           reverse=True)
     # pack the biggest skus first then progressively pack the smaller ones
-    for box_dict in useable_boxes:
+    for box_index, box_dict in enumerate(useable_boxes):
+        current_app.log.info('Trying box {}'.format(box_index))
         box = box_dict['box']
         packed_skus = pack_boxes(box_dict['dimensions'], skus_to_pack)
         # additional box starts as the last parcel
@@ -462,6 +464,8 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
         if len(additional_box) > 0:
             packed_skus.append(additional_box)
         packed_boxes[box_dict['box']] = packed_skus
+
+    current_app.log.info('Setting up box dictionary')
 
     box_dictionary = setup_box_dictionary(packed_boxes, zone)
 
