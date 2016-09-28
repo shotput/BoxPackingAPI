@@ -247,9 +247,14 @@ def insert_skus_into_dimensions(remaining_dimensions, skus_to_pack,
     block = remaining_dimensions[0]
     for sku in skus_to_pack:
         if does_it_fit(sku.dimensions, block):
+            print 'skus_packed', skus_packed
+            print 'skus_to_pack', skus_to_pack
+            print 'fits', sku
             # if the sku fits, pack it, remove it from the skus to pack
             skus_packed[-1].append(sku)
             skus_to_pack.remove(sku)
+            print 'skus_packed', skus_packed
+            print 'skus_to_pack', skus_to_pack
             # find the remaining dimensions in the box after packing
             left_over_dimensions = best_fit(sku.dimensions, block)
             for left_over_block in left_over_dimensions:
@@ -261,6 +266,7 @@ def insert_skus_into_dimensions(remaining_dimensions, skus_to_pack,
             break
     # remove the block from that remaining dimensions
     remaining_dimensions.pop(0)
+    print remaining_dimensions
     return remaining_dimensions, skus_packed
 
 
@@ -296,15 +302,23 @@ def pack_boxes(box_dimensions, skus_to_pack):
     skus_packed = []  # the skus that have been packed
     skus_to_pack_copy = list(skus_to_pack)
     while len(skus_to_pack_copy) > 0:
-        # current_app.log.info('len(skus_to_pack_copy): {}\nlen(skus_packed): {}'
-        #                      .format(len(skus_to_pack_copy), len(skus_packed)))
+        print 'to pack', skus_to_pack_copy
+        print 'packed', skus_packed
+        print 'remaining dimensions', remaining_dimensions
+        # print('len(skus_to_pack_copy): {}\nlen(skus_packed): {}\nlen(remaining_dimensions): {}'
+        #       .format(len(skus_to_pack_copy), len(skus_packed), len(remaining_dimensions)))
         # keep going until there are no more skus to pack
         if len(remaining_dimensions) == 0:
+            print 'reinitializing'
             # if there is no room for more skus in the last parcel,
             # append an empty parcel with the full box dimensions
             # and append an empty parcel to the list of skus packed
             remaining_dimensions = [box_dimensions]
-            skus_packed.append([])
+            if len(skus_packed) == 0 or len(skus_packed[-1]) > 0:
+                skus_packed.append([])
+            elif len(skus_packed[-1]) == 0:
+                skus_packed.pop()
+                break
         # iterate through remaining dimensions to pack boxes
         for block in remaining_dimensions:
             remaining_dimensions, skus_packed = insert_skus_into_dimensions(
@@ -438,7 +452,7 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
                       last_parcel=None)
     }
     '''
-    current_app.log.info('Running box algorithm on SKUs: {}, boxes: {}'
+    print('Running box algorithm on SKUs: {}, boxes: {}'
                          .format(unordered_skus, useable_boxes))
 
     packed_boxes = {}
@@ -447,10 +461,10 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
                           reverse=True)
     # pack the biggest skus first then progressively pack the smaller ones
     for box_index, box_dict in enumerate(useable_boxes):
-        current_app.log.info('Trying box {}'.format(box_index))
+        print('Trying box {}'.format(box_index))
         box = box_dict['box']
         packed_skus = pack_boxes(box_dict['dimensions'], skus_to_pack)
-        current_app.log.info('Boxes packed')
+        print('Boxes packed')
         # additional box starts as the last parcel
         additional_box = []
         for skus in packed_skus:
@@ -471,7 +485,7 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
             packed_skus.append(additional_box)
         packed_boxes[box_dict['box']] = packed_skus
 
-    current_app.log.info('Setting up box dictionary')
+    print('Setting up box dictionary')
 
     box_dictionary = setup_box_dictionary(packed_boxes, zone)
 
