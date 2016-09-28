@@ -445,6 +445,7 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
         current_app.log.info('Trying box {}'.format(box_index))
         box = box_dict['box']
         packed_skus = pack_boxes(box_dict['dimensions'], skus_to_pack)
+        current_app.log.info('Boxes packed')
         # additional box starts as the last parcel
         additional_box = []
         for skus in packed_skus:
