@@ -296,6 +296,8 @@ def pack_boxes(box_dimensions, skus_to_pack):
     skus_packed = []  # the skus that have been packed
     skus_to_pack_copy = list(skus_to_pack)
     while len(skus_to_pack_copy) > 0:
+        current_app.log.info('len(skus_to_pack_copy): {}\nlen(skus_packed): {}'
+                             .format(len(skus_to_pack_copy), len(skus_packed)))
         # keep going until there are no more skus to pack
         if len(remaining_dimensions) == 0:
             # if there is no room for more skus in the last parcel,
