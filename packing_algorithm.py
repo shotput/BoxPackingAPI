@@ -305,7 +305,7 @@ def pack_boxes(box_dimensions, skus_to_pack):
         print 'to pack', skus_to_pack_copy
         print 'packed', skus_packed
         print 'remaining dimensions', remaining_dimensions
-        # print('len(skus_to_pack_copy): {}\nlen(skus_packed): {}\nlen(remaining_dimensions): {}'
+        # current_app.log.info('len(skus_to_pack_copy): {}\nlen(skus_packed): {}\nlen(remaining_dimensions): {}'
         #       .format(len(skus_to_pack_copy), len(skus_packed), len(remaining_dimensions)))
         # keep going until there are no more skus to pack
         if len(remaining_dimensions) == 0:
@@ -452,7 +452,7 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
                       last_parcel=None)
     }
     '''
-    print('Running box algorithm on SKUs: {}, boxes: {}'
+    current_app.log.info('Running box algorithm on SKUs: {}, boxes: {}'
                          .format(unordered_skus, useable_boxes))
 
     packed_boxes = {}
@@ -461,10 +461,10 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
                           reverse=True)
     # pack the biggest skus first then progressively pack the smaller ones
     for box_index, box_dict in enumerate(useable_boxes):
-        print('Trying box {}'.format(box_index))
+        current_app.log.info('Trying box {}'.format(box_index))
         box = box_dict['box']
         packed_skus = pack_boxes(box_dict['dimensions'], skus_to_pack)
-        print('Boxes packed')
+        current_app.log.info('Boxes packed')
         # additional box starts as the last parcel
         additional_box = []
         for skus in packed_skus:
@@ -485,7 +485,7 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
             packed_skus.append(additional_box)
         packed_boxes[box_dict['box']] = packed_skus
 
-    print('Setting up box dictionary')
+    current_app.log.info('Setting up box dictionary')
 
     box_dictionary = setup_box_dictionary(packed_boxes, zone)
 
