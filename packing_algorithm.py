@@ -411,7 +411,6 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
 
     - returns a dictionary of boxes with an 2D array of skus packed
         in each parcel
-
     Args:
         unordered_skus (List[SkuTuple])
         useable_boxes (List(Dict[{
@@ -431,6 +430,10 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
                       skus_per_box=[[SkuTuple], [SkuTuple, SkuTuple, SkuTuple]],
                       last_parcel=None)
     }
+
+    Note: useable_boxes refers to boxes that you already know is big enough to
+        fit at least ONE of each of the skus. If you send in a box that is too
+        small, it was get into an infinite loop.
     '''
     packed_boxes = {}
     # sort skus by longest dimension, longest first
