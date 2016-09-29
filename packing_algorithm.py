@@ -48,11 +48,10 @@ data path:
 [1] - http://www.jstor.org/stable/pdf/223143.pdf, page 257
 '''
 
-from collections import namedtuple
-
 from fulfillment_api.constants import usps_shipping
 from fulfillment_api.errors import BoxError
 
+from collections import namedtuple
 from itertools import izip
 
 
@@ -420,6 +419,9 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
         }]))
         max_weight (Int)
         zone (Int?)
+
+    Raises:
+        BoxError when no box could fit some SKU.
 
     Example:
     >>> packing_algorithm([sku1, sku2], [], {sku1: 1, sku2: 3}, True)
