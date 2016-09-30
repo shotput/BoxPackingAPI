@@ -435,7 +435,7 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
 
     Note: useable_boxes refers to boxes that you already know are big enough to
         fit at least ONE of each of the skus. If you send in a box that is too
-        small, you will be stuck in an inifite loop.
+        small, you will be stuck in an infinite loop.
     '''
     packed_boxes = {}
     # sort skus by longest dimension, longest first
