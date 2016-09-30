@@ -102,6 +102,7 @@ def how_many_skus_fit(sku_info, box_info, max_packed=None):
     remaining_dimensions = [box_dims]
     remaining_volume = volume(box_dims)
     sku = SkuTuple(None, sku_dims, sku_info.get('weight', 0))
+    # a list of lists. each nested list is representative of a package
     skus_packed = [[]]
     while remaining_dimensions != []:
         for block in remaining_dimensions:
