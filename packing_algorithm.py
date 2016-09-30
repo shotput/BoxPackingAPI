@@ -416,7 +416,7 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
             'dimensions': List(int, int, int)
             'box': ShippingBox
         }]))
-        min_boxes_by_weight (Int)
+        max_weight (Int)
         zone (Int?)
 
     Raises:

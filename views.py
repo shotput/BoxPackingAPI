@@ -7,6 +7,7 @@ from .helper import (api_packing_algorithm, compare_1000_times,
 from ..authentication.login_required import (login_required,
                                              shotput_permission_required)
 from ..crossdomain import crossdomain
+from fulfillment_api.api_verify import verify_box_api
 
 blueprint = Blueprint('box_packing', __name__)
 
@@ -15,6 +16,7 @@ blueprint = Blueprint('box_packing', __name__)
                  methods=['POST', 'OPTIONS'])
 @crossdomain(api=True)
 @login_required
+@verify_box_api
 def get_best_fit():
     '''
     A non-database calling endpoint which is a simple usage of the box packing
@@ -57,6 +59,7 @@ def get_best_fit():
                  methods=['POST', 'OPTIONS'])
 @crossdomain(api=True)
 @login_required
+@verify_box_api
 def get_space_after_packing():
     '''
     Non-database calling endpoint which calculates the remaining volume in a
@@ -108,6 +111,7 @@ def get_space_after_packing():
 @blueprint.route('/box_packing_api/capacity', methods=['POST', 'OPTIONS'])
 @crossdomain(api=True)
 @login_required
+@verify_box_api
 def how_many_fit():
     '''
     non-database hitting endpoint which calculates the capacity of a box
@@ -161,6 +165,7 @@ def compare_pack():
 @blueprint.route('/box_packing_api/full', methods=['POST', 'OPTIONS'])
 @crossdomain(api=True)
 @login_required
+@verify_box_api
 def box_packing_api():
     '''
     a full access endpoint to the box algorithm, which accepts boxes and skus
