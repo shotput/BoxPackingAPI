@@ -1,11 +1,36 @@
 from fulfillment_api.authentication.shipping_box import ShippingBox
-from fulfillment_api.constants import usps_shipping
+from fulfillment_api.constants import usps_shipping, units
 from fulfillment_api.errors import BoxError
 import fulfillment_api.messages as msg
+from .helper import api_packing_algorithm
 from .packing_algorithm import does_it_fit, packing_algorithm, SkuTuple
 
 from itertools import izip
 from sqlalchemy import or_
+
+
+def is_packing_valid(sku_quantities, box):
+    skus = []
+    for sku, quantity in sku_quantities.iteritems():
+        skus.append({
+            'product_name': sku.id,
+
+            'weight': sku.weight_g,
+            'weight_units': units.GRAMS,
+
+            'width': sku.width_cm,
+            'height': sku.height_cm,
+            'length': sku.length_cm,
+            'dimension_units': units.CENTIMETERS,
+
+            'quantity': quantity
+        })
+    try:
+        packing = api_packing_algorithm([box], skus, None)
+        return len(packing['packages']) == 1
+    except BoxError:
+        return False
+    return True
 
 
 def select_useable_boxes(session, min_box_dimensions, team,

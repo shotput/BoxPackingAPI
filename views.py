@@ -23,7 +23,7 @@ def get_best_fit():
     algorithm which accepts json with skus and a single box.
 
     Returns:
-        'packed_prodcuts': List[Dict[
+        'packages': List[Dict[
             skus_packed: Dict[sku, quantity]
             total_weight: float
     '''
