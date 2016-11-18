@@ -457,6 +457,9 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
                     raise APIError('SKU is too heavy: {}'
                                    .format(skus[0].sku_number))
 
+                # TODO: Instead of removing the last SKU, remove the lightest
+                # SKU, or the SKU that is closest in weight to the difference
+                # between the current weight and the maximum weight.
                 popped_sku = skus.pop()
 
                 if ((sum(sku.weight for sku in additional_box) +
