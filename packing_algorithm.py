@@ -49,7 +49,7 @@ data path:
 '''
 
 from fulfillment_api.constants import usps_shipping
-from fulfillment_api.errors import BoxError
+from fulfillment_api.errors import APIError, BoxError
 
 from collections import namedtuple
 from itertools import izip
@@ -446,23 +446,33 @@ def packing_algorithm(unordered_skus, useable_boxes, max_weight,
         box = box_dict['box']
         packed_skus = pack_boxes(box_dict['dimensions'], skus_to_pack)
         # additional box starts as the last parcel
+
+        additional_boxes = []
         additional_box = []
         for skus in packed_skus:
             # if the weight of the contents of the box are greater than the
             # given max weight
-            if sum(sku.weight for sku in skus) + box.weight_g > max_weight:
+            while sum(sku.weight for sku in skus) + box.weight_g > max_weight:
+                if len(skus) == 1:
+                    raise APIError('SKU is too heavy: {}'
+                                   .format(skus[0].sku_number))
+
+                popped_sku = skus.pop()
+
                 if ((sum(sku.weight for sku in additional_box) +
-                        float(skus[-1].weight) + box.weight_g) <= max_weight):
-                    # if the additional box weight + the last sku is less than
-                    # the max weight, add it to the box
-                    additional_box.append(skus.pop())
-                else:
-                    # else start a new box and append the additional box to the
-                    # packed_skus
-                    packed_skus.append(additional_box)
-                    additional_box = [skus.pop()]
+                        float(popped_sku.weight) + box.weight_g) > max_weight):
+                    # if the additional box weight + the last sku is more than
+                    # the max weight, start a new box
+                    additional_boxes.append(additional_box)
+                    additional_box = []
+
+                additional_box.append(popped_sku)
+
         if len(additional_box) > 0:
-            packed_skus.append(additional_box)
+            additional_boxes.append(additional_box)
+
+        packed_skus += additional_boxes
+
         packed_boxes[box_dict['box']] = packed_skus
 
     box_dictionary = setup_box_dictionary(packed_boxes, zone)
