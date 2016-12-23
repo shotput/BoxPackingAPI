@@ -331,14 +331,14 @@ def compare_flat_rate_prices(zone, box, best_flat_rate_box):
         if zone is None:
             # we don't need to compare regional boxes
             return best_flat_rate_box
-        box_key = '{}_{}'.format(box.name[-1], zone)
+        box_key = u'{}_{}'.format(box.name[-1], zone)
     # get the cost of the box in question
     box_cost = usps_shipping.FLAT_RATE_COSTS[box_key]
     # format key
     if best_flat_rate_box.description == usps_shipping.FLAT_RATE:
         best_box_key = best_flat_rate_box.name
     elif best_flat_rate_box.description == usps_shipping.REGIONAL_RATE:
-        best_box_key = '{}_{}'.format(best_flat_rate_box.name[-1], zone)
+        best_box_key = u'{}_{}'.format(best_flat_rate_box.name[-1], zone)
     # get the cost for the current best box
     best_box_cost = usps_shipping.FLAT_RATE_COSTS[best_box_key]
 
