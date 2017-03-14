@@ -1,13 +1,17 @@
-from flask import Blueprint, current_app, jsonify, request
-from fulfillment_api import messages as msg
+from fulfillment_api.api_verify import verify_box_api
+from fulfillment_api.constants import permissions
 from fulfillment_api.errors import BoxError
+from fulfillment_api import messages as msg
+
 from .helper import (api_packing_algorithm, compare_1000_times,
                      how_many_skus_fit, pre_pack_boxes, space_after_packing)
 
 from ..authentication.login_required import (login_required,
                                              shotput_permission_required)
 from ..crossdomain import crossdomain
-from fulfillment_api.api_verify import verify_box_api
+from ..permissions.decorators import view_requires_team_permission
+
+from flask import Blueprint, current_app, jsonify, request
 
 blueprint = Blueprint('box_packing', __name__)
 
@@ -17,6 +21,7 @@ blueprint = Blueprint('box_packing', __name__)
 @crossdomain(api=True)
 @login_required
 @verify_box_api
+@view_requires_team_permission(permissions.box_packing_read)
 def get_best_fit():
     '''
     A non-database calling endpoint which is a simple usage of the box packing
@@ -60,6 +65,7 @@ def get_best_fit():
 @crossdomain(api=True)
 @login_required
 @verify_box_api
+@view_requires_team_permission(permissions.box_packing_read)
 def get_space_after_packing():
     '''
     Non-database calling endpoint which calculates the remaining volume in a
@@ -112,6 +118,7 @@ def get_space_after_packing():
 @crossdomain(api=True)
 @login_required
 @verify_box_api
+@view_requires_team_permission(permissions.box_packing_read)
 def how_many_fit():
     '''
     non-database hitting endpoint which calculates the capacity of a box
@@ -125,10 +132,10 @@ def how_many_fit():
     '''
     json_data = request.get_json(force=True)
     current_app.log.data(json_data)
-    sku_info = json_data['product_info']
-    box_info = json_data['box_info']
-    max_packed = json_data.get('max_packed')
     try:
+        sku_info = json_data['product_info']
+        box_info = json_data['box_info']
+        max_packed = json_data.get('max_packed')
         return jsonify(how_many_skus_fit(sku_info, box_info, max_packed))
     except KeyError as e:
         current_app.log.error(e)
@@ -151,6 +158,7 @@ def how_many_fit():
 @crossdomain(api=True)
 @login_required
 @shotput_permission_required
+@view_requires_team_permission(permissions.global_god_mode)
 def compare_pack():
     '''
     endpoint which can be used to verify the accuracy of
@@ -166,6 +174,7 @@ def compare_pack():
 @crossdomain(api=True)
 @login_required
 @verify_box_api
+@view_requires_team_permission(permissions.box_packing_read)
 def box_packing_api():
     '''
     a full access endpoint to the box algorithm, which accepts boxes and skus
