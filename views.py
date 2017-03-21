@@ -1,15 +1,15 @@
 from fulfillment_api.api_verify import verify_box_api
 from fulfillment_api.constants import permissions
-from fulfillment_api.errors import BoxError
+from fulfillment_api.errors import APIError, BoxError
 from fulfillment_api import messages as msg
-
-from .helper import (api_packing_algorithm, compare_1000_times,
-                     how_many_skus_fit, pre_pack_boxes, space_after_packing)
 
 from ..authentication.login_required import (login_required,
                                              shotput_permission_required)
 from ..crossdomain import crossdomain
 from ..permissions.decorators import view_requires_team_permission
+
+from .helper import (api_packing_algorithm, compare_1000_times,
+                     how_many_skus_fit, pre_pack_boxes, space_after_packing)
 
 from flask import Blueprint, current_app, jsonify, request
 
@@ -57,6 +57,9 @@ def get_best_fit():
     except KeyError as e:
         current_app.log.error(e)
         return jsonify(error=msg.missing_value_for(e.message))
+    except APIError as e:
+        current_app.log.error(e)
+        return jsonify(error=e.message), e.status_code
     return jsonify(packages=skus_arrangement)
 
 
@@ -111,6 +114,9 @@ def get_space_after_packing():
     except BoxError as e:
         current_app.log.error(e)
         return jsonify(error=e.message), 400
+    except APIError as e:
+        current_app.log.error(e)
+        return jsonify(error=e.message), e.status_code
     return jsonify(space)
 
 
@@ -151,6 +157,9 @@ def how_many_fit():
         value = e.message.split(' ')[-1]
         return jsonify(error=('Invalid data in request. Check value {}'
                               .format(value))), 400
+    except APIError as e:
+        current_app.log.error(e)
+        return jsonify(error=e.message), e.status_code
 
 
 @blueprint.route('/box_packing_api/compare_packing_efficiency',
@@ -219,4 +228,7 @@ def box_packing_api():
         value = e.message.split(' ')[-1]
         return jsonify(error=('Invalid data in request. Check value {}'
                               .format(value))), 400
+    except APIError as e:
+        current_app.log.error(e)
+        return jsonify(error=e.message), e.status_code
     return jsonify(package_contents)
