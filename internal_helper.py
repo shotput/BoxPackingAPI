@@ -3,30 +3,30 @@ from fulfillment_api.constants import usps_shipping, units
 from fulfillment_api.errors import BoxError
 import fulfillment_api.messages as msg
 from .helper import api_packing_algorithm
-from .packing_algorithm import does_it_fit, packing_algorithm, SkuTuple
+from .packing_algorithm import does_it_fit, packing_algorithm, ItemTuple
 
 from itertools import izip
 from sqlalchemy import or_
 
 
-def is_packing_valid(sku_quantities, box):
-    skus = []
-    for sku, quantity in sku_quantities.iteritems():
-        skus.append({
-            'product_name': sku.id,
+def is_packing_valid(item_quantities, box):
+    items = []
+    for item, quantity in item_quantities.iteritems():
+        items.append({
+            'product_name': item.id,
 
-            'weight': sku.weight_g,
+            'weight': item.weight_g,
             'weight_units': units.GRAMS,
 
-            'width': sku.width_cm,
-            'height': sku.height_cm,
-            'length': sku.length_cm,
+            'width': item.width_cm,
+            'height': item.height_cm,
+            'length': item.length_cm,
             'dimension_units': units.CENTIMETERS,
 
             'quantity': quantity
         })
     try:
-        packing = api_packing_algorithm([box], skus, None)
+        packing = api_packing_algorithm([box], items, None)
         return len(packing['packages']) == 1
     except BoxError:
         return False
@@ -66,28 +66,28 @@ def select_useable_boxes(session, min_box_dimensions, team,
 
     for box in boxes:
         box_dims = sorted([box.width_cm, box.height_cm, box.length_cm])
-        # make sure we only look at boxes where every sku will fit
+        # make sure we only look at boxes where every item will fit
         if does_it_fit(min_box_dimensions, box_dims):
             useable_boxes.append({'box': box, 'dimensions': box_dims})
     # sort boxes by volume, smallest first and return
     return sorted(useable_boxes, key=lambda box: box['box'].total_cubic_cm)
 
 
-def shotput_packing_algorithm(session, team, qty_per_sku, flat_rate_okay=False,
+def shotput_packing_algorithm(session, team, qty_per_item, flat_rate_okay=False,
                               zone=None, preferred_max_weight=None):
     '''
-    from skus provided, and boxes available, pack boxes with skus
+    from items provided, and boxes available, pack boxes with items
 
-    - returns a dictionary of boxes with an 2D array of skus packed
+    - returns a dictionary of boxes with an 2D array of items packed
         in each parcel
 
     Args:
         session (sqlalchemy.orm.session.Session)
         team (Team)
-        qty_per_sku (Dict[str, Dict[{
-            'sku': SimpleSku,
+        qty_per_item (Dict[str, Dict[{
+            'item': SimpleItem,
             'quantity': int
-        }]]): quantity of each sku needing to be packed
+        }]]): quantity of each item needing to be packed
         flat_rate_okay (boolean): whether or not usps flat and regional rate
             boxes can be used
         zone (int): usps regional shipping zone based on shotput Warehouse
@@ -100,30 +100,30 @@ def shotput_packing_algorithm(session, team, qty_per_sku, flat_rate_okay=False,
         }]
 
     Example:
-    >>> shotput_packing_algorithm(session, team1, {sku1: 1, sku2: 3}, True)
+    >>> shotput_packing_algorithm(session, team1, {item1: 1, item2: 3}, True)
     {
         'package': (box=<best_standard_box object>,
-                    skus_per_box= [[sku1, sku2], [sku2, sku2]],
+                    items_per_box= [[item1, item2], [item2, item2]],
                     last_parcel=<smaller_box object),
         'flat_rate': (box=<best_flat_rate object>,
-                      skus_per_box=[[sku1], [sku2, sku2, sku2]],
+                      items_per_box=[[item1], [item2, item2, item2]],
                       last_parcel=None)
     }
     '''
-    unordered_skus = []
+    unordered_items = []
     max_weight = preferred_max_weight or 31710
     min_box_dimensions = [None, None, None]
 
-    for sku_number, sku_data in qty_per_sku.iteritems():
+    for item_number, item_data in qty_per_item.iteritems():
 
-        dimensions = sorted([sku_data['sku'].width_cm,
-                             sku_data['sku'].height_cm,
-                             sku_data['sku'].length_cm])
+        dimensions = sorted([item_data['item'].width_cm,
+                             item_data['item'].height_cm,
+                             item_data['item'].length_cm])
         min_box_dimensions = [max(a, b) for a, b in izip(dimensions,
                                                          min_box_dimensions)]
-        unordered_skus += ([SkuTuple(sku_data['sku'], dimensions,
-                            sku_data['sku'].weight_g)] *
-                           int(sku_data['quantity']))
+        unordered_items += ([ItemTuple(item_data['item'], dimensions,
+                            item_data['item'].weight_g)] *
+                           int(item_data['quantity']))
 
     useable_boxes = select_useable_boxes(session, min_box_dimensions, team,
                                          flat_rate_okay)
@@ -133,17 +133,17 @@ def shotput_packing_algorithm(session, team, qty_per_sku, flat_rate_okay=False,
     if len(useable_boxes) == 0:
         raise BoxError(msg.boxes_too_small)
 
-    box_dictionary = packing_algorithm(unordered_skus, useable_boxes,
+    box_dictionary = packing_algorithm(unordered_items, useable_boxes,
                                        max_weight, zone)
     if box_dictionary['package'] is not None:
-        skus_per_box = [[sku.sku_number for sku in parcel]
-                        for parcel in box_dictionary['package'].skus_per_box]
+        items_per_box = [[item.item_number for item in parcel]
+                        for parcel in box_dictionary['package'].items_per_box]
         box_dictionary['package'] = box_dictionary['package']._replace(
-            skus_per_box=skus_per_box)
+            items_per_box=items_per_box)
     if box_dictionary['flat_rate'] is not None:
-        skus_per_box = [[sku.sku_number for sku in parcel]
-                        for parcel in box_dictionary['flat_rate'].skus_per_box]
+        items_per_box = [[item.item_number for item in parcel]
+                        for parcel in box_dictionary['flat_rate'].items_per_box]
         box_dictionary['flat_rate'] = box_dictionary['flat_rate']._replace(
-            skus_per_box=skus_per_box)
+            items_per_box=items_per_box)
 
     return box_dictionary

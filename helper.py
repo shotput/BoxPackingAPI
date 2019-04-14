@@ -1,5 +1,5 @@
-from fulfillment_api.authentication.products.simple_sku import (
-    get_sku_dictionary_from_list)
+from fulfillment_api.authentication.products.simple_item import (
+    get_item_dictionary_from_list)
 from fulfillment_api.authentication.shipping_box import ShippingBox
 from fulfillment_api.constants import units
 from fulfillment_api.errors import BoxError
@@ -7,19 +7,19 @@ from fulfillment_api.util.unit_conversion import (convert_dimensional_units,
                                                   convert_mass_units)
 
 from .packing_algorithm import (best_fit, does_it_fit,
-                                insert_skus_into_dimensions, pack_boxes,
-                                packing_algorithm, SkuTuple, volume)
+                                insert_items_into_dimensions, pack_boxes,
+                                packing_algorithm, ItemTuple, volume)
 
 from collections import Counter
 from itertools import izip
 import math
 
 
-def space_after_packing(sku_info, box_info):
+def space_after_packing(item_info, box_info):
     '''
-    returns the remaining space in a box after packing a sku and
+    returns the remaining space in a box after packing a item and
         the remaining block sizes within the box after an ideal fit
-    assumes sku and box dimensions are in the same units
+    assumes item and box dimensions are in the same units
 
     Args:
 
@@ -43,17 +43,17 @@ def space_after_packing(sku_info, box_info):
         }]
     '''
 
-    sku_dims = sorted([sku_info['width'], sku_info['height'],
-                       sku_info['length']])
+    item_dims = sorted([item_info['width'], item_info['height'],
+                       item_info['length']])
     box_dims = sorted([box_info['width'], box_info['height'],
                        box_info['length']])
 
-    if not does_it_fit(sku_dims, box_dims):
+    if not does_it_fit(item_dims, box_dims):
         raise BoxError('Product with dimensions {} does not fit into a box with'
                        ' dimensions {}'
-                       .format('X'.join(map(str, sku_dims)),
-                               'X'.join(map(str, sku_dims))))
-    remaining_dimensions = best_fit(sku_dims, box_dims)
+                       .format('X'.join(map(str, item_dims)),
+                               'X'.join(map(str, item_dims))))
+    remaining_dimensions = best_fit(item_dims, box_dims)
     blocks = [{
         'width': block[0],
         'height': block[1],
@@ -67,15 +67,15 @@ def space_after_packing(sku_info, box_info):
     }
 
 
-def how_many_skus_fit(sku_info, box_info, max_packed=None):
+def how_many_items_fit(item_info, box_info, max_packed=None):
     '''
-    returns the number of of skus of a certain size can fit in a box, as well
+    returns the number of of items of a certain size can fit in a box, as well
         as the remaining volume
-    assumes sku and box dimensions are on in the same units
+    assumes item and box dimensions are on in the same units
 
     Args:
 
-        sku_info (Dict[{
+        item_info (Dict[{
                 width: float
                 height: float
                 length: float
@@ -95,35 +95,35 @@ def how_many_skus_fit(sku_info, box_info, max_packed=None):
             remaining_volume: float
         }]
     '''
-    sku_dims = sorted([sku_info['width'], sku_info['height'],
-                       sku_info['length']])
+    item_dims = sorted([item_info['width'], item_info['height'],
+                       item_info['length']])
     box_dims = sorted([box_info['width'], box_info['height'],
                        box_info['length']])
     remaining_dimensions = [box_dims]
     remaining_volume = volume(box_dims)
-    sku = SkuTuple(None, sku_dims, sku_info.get('weight', 0))
+    item = ItemTuple(None, item_dims, item_info.get('weight', 0))
     # a list of lists. each nested list is representative of a package
-    skus_packed = [[]]
+    items_packed = [[]]
     while remaining_dimensions != []:
         for block in remaining_dimensions:
-            # skus_to_pack is of length 4 at every loop because
-            # insert_skus_into_dimensions will pack up to 3 skus at any given
-            # time and then check that there are more skus to pack before
+            # items_to_pack is of length 4 at every loop because
+            # insert_items_into_dimensions will pack up to 3 items at any given
+            # time and then check that there are more items to pack before
             # continuing
-            skus_to_pack = [sku, sku, sku, sku]
-            remaining_dimensions, skus_packed = insert_skus_into_dimensions(
-                remaining_dimensions, skus_to_pack, skus_packed)
-            # skus_to_pack updates, insert skus into dimensions may pack more
-            # than one sku and therefore we find the difference between the
-            # length of the remaining skus to pack and the original (4)
-            remaining_volume -= volume(sku_dims) * (4 - len(skus_to_pack))
+            items_to_pack = [item, item, item, item]
+            remaining_dimensions, items_packed = insert_items_into_dimensions(
+                remaining_dimensions, items_to_pack, items_packed)
+            # items_to_pack updates, insert items into dimensions may pack more
+            # than one item and therefore we find the difference between the
+            # length of the remaining items to pack and the original (4)
+            remaining_volume -= volume(item_dims) * (4 - len(items_to_pack))
             if (max_packed is not None and
-                    len(skus_packed[0]) == int(max_packed)):
+                    len(items_packed[0]) == int(max_packed)):
                 # set remaining dimensions to empty to break from the while loop
                 remaining_dimensions = []
                 break
     return {
-        'total_packed': len(skus_packed[0]),
+        'total_packed': len(items_packed[0]),
         'remaining_volume': remaining_volume
     }
 
@@ -138,17 +138,17 @@ def weight_of_box_contents(box_contents):
     returns the weight of the package contents
 
     Args:
-        box_contents (List[sku_number])
-        sku_info (Dict[Dict[{
+        box_contents (List[item_number])
+        item_info (Dict[Dict[{
                 'weight_g': int/float
             }]])
     Returns:
         float
     '''
-    return sum(float(sku.weight) for sku in box_contents)
+    return sum(float(item.weight) for item in box_contents)
 
 
-def api_packing_algorithm(boxes_info, skus_info, options):
+def api_packing_algorithm(boxes_info, items_info, options):
     '''
     non-database calling method which allows checking multiple boxes
     for packing efficiency
@@ -164,7 +164,7 @@ def api_packing_algorithm(boxes_info, skus_info, options):
                 weight_units: ('grams', 'pounds', 'kilograms', 'onces')
                 name: String
             )])
-        skus_info (List[Dict(
+        items_info (List[Dict(
                 weight: float
                 height: float
                 length: float
@@ -180,7 +180,7 @@ def api_packing_algorithm(boxes_info, skus_info, options):
     Returns:
         Dict[
             'package_contents': List[Dict[
-                skus_packed: Dict[sku, quantity]
+                items_packed: Dict[item, quantity]
                 total_weight: float
                 'best_box': Dict[
                     weight: float
@@ -195,19 +195,19 @@ def api_packing_algorithm(boxes_info, skus_info, options):
         ]
     '''
     boxes = []
-    skus = []
+    items = []
     if len(set(box['name'] for box in boxes_info)) < len(boxes_info):
         # non-unique names for the boxes have been used.
         raise BoxError('Please use unique boxes with unique names')
     min_box_dimensions = [None, None, None]
-    for sku in skus_info:
-        dimensions = sorted([float(sku['width']), float(sku['height']),
-                             float(sku['length'])])
-        weight_units = sku['weight_units']
-        sku_weight = convert_mass_units(float(sku['weight']), weight_units,
+    for item in items_info:
+        dimensions = sorted([float(item['width']), float(item['height']),
+                             float(item['length'])])
+        weight_units = item['weight_units']
+        item_weight = convert_mass_units(float(item['weight']), weight_units,
                                         to_unit='grams')
-        skus += ([SkuTuple(sku['product_name'], dimensions, sku_weight)] *
-                 sku['quantity'])
+        items += ([ItemTuple(item['product_name'], dimensions, item_weight)] *
+                 item['quantity'])
         min_box_dimensions = [max(a, b) for a, b in izip(dimensions,
                                                          min_box_dimensions)]
     if options is not None:
@@ -236,12 +236,12 @@ def api_packing_algorithm(boxes_info, skus_info, options):
     # sort boxes by volume
     boxes = sorted(boxes, key=lambda box: volume(box['dimensions']))
     # send everything through the packing algorithm
-    box_dictionary = packing_algorithm(skus, boxes, max_weight)
+    box_dictionary = packing_algorithm(items, boxes, max_weight)
     # only return the package, because these boxes don't have description so
     # flat_rate boxes won't be a thing - at least for now
     package_info = box_dictionary['package']
-    package_contents_dict = [get_sku_dictionary_from_list(parcel)
-                             for parcel in package_info.skus_per_box]
+    package_contents_dict = [get_item_dictionary_from_list(parcel)
+                             for parcel in package_info.items_per_box]
     package_contents = []
     best_box = [box for box in boxes_info
                 if box['name'] == package_info.box.name][0]
@@ -257,12 +257,12 @@ def api_packing_algorithm(boxes_info, skus_info, options):
         else:
             selected_box = best_box
             total_weight = package_info.box.weight_g
-        skus_packed = {}
-        for sku, info in parcel.iteritems():
-            skus_packed[sku] = info['quantity']
-            total_weight += info['quantity'] * info['sku'].weight
+        items_packed = {}
+        for item, info in parcel.iteritems():
+            items_packed[item] = info['quantity']
+            total_weight += info['quantity'] * info['item'].weight
         package_contents.append({
-            'packed_products': skus_packed,
+            'packed_products': items_packed,
             'total_weight': total_weight,
             'box': selected_box
         })
@@ -272,10 +272,10 @@ def api_packing_algorithm(boxes_info, skus_info, options):
     }
 
 
-def pre_pack_boxes(box_info, skus_info, options):
+def pre_pack_boxes(box_info, items_info, options):
     '''
-    returns the packed skus of one specific box based on sku_info
-    the sku info input does not require a db call
+    returns the packed items of one specific box based on item_info
+    the item info input does not require a db call
 
     Args
         boxes_info (Dict[
@@ -302,7 +302,7 @@ def pre_pack_boxes(box_info, skus_info, options):
 
     Returns
         List[Dict[{
-            packed_products: Dict[sku, qty],
+            packed_products: Dict[item, qty],
             total_weight: float
         }]]
     '''
@@ -310,51 +310,51 @@ def pre_pack_boxes(box_info, skus_info, options):
     box_dims = sorted([dim_to_cm(box_info['width'], dimension_units),
                        dim_to_cm(box_info['length'], dimension_units),
                        dim_to_cm(box_info['height'], dimension_units)])
-    skus_to_pack = []
+    items_to_pack = []
     weight_units = box_info['weight_units']
     box_weight = convert_mass_units(box_info['weight'], weight_units,
                                     to_unit='grams')
     total_weight = box_weight
     max_weight = options.get('max_weight', 31710)  # given max weight or 70lbs
-    for sku in skus_info:
-        dimension_units = sku['dimension_units']
-        weight_units = sku['weight_units']
-        sorted_dims = sorted([dim_to_cm(sku['height'], dimension_units),
-                              dim_to_cm(sku['length'], dimension_units),
-                              dim_to_cm(sku['width'], dimension_units)])
+    for item in items_info:
+        dimension_units = item['dimension_units']
+        weight_units = item['weight_units']
+        sorted_dims = sorted([dim_to_cm(item['height'], dimension_units),
+                              dim_to_cm(item['length'], dimension_units),
+                              dim_to_cm(item['width'], dimension_units)])
         if not does_it_fit(sorted_dims, box_dims):
-            raise BoxError('Some of your skus are too big for the box you\'ve'
+            raise BoxError('Some of your items are too big for the box you\'ve'
                            ' selected. Please select a bigger box or contact'
                            ' ops@shotput.com.')
-        sku['weight_g'] = convert_mass_units(sku['weight'], weight_units,
+        item['weight_g'] = convert_mass_units(item['weight'], weight_units,
                                              to_unit='grams')
-        skus_to_pack += [SkuTuple(sku['product_name'], sorted_dims,
-                         int(sku['weight_g']))] * int(sku['quantity'])
-        total_weight += sku['weight_g'] * int(sku['quantity'])
-    skus_to_pack = sorted(skus_to_pack, key=lambda sku: sku.dimensions[2],
+        items_to_pack += [ItemTuple(item['product_name'], sorted_dims,
+                         int(item['weight_g']))] * int(item['quantity'])
+        total_weight += item['weight_g'] * int(item['quantity'])
+    items_to_pack = sorted(items_to_pack, key=lambda item: item.dimensions[2],
                           reverse=True)
     box_dims = sorted(box_dims)
-    skus_packed = pack_boxes(box_dims, skus_to_pack)
-    if math.ceil(float(total_weight) / max_weight) > len(skus_packed):
+    items_packed = pack_boxes(box_dims, items_to_pack)
+    if math.ceil(float(total_weight) / max_weight) > len(items_packed):
         additional_box = []
-        for skus in skus_packed:
-            while weight_of_box_contents(skus) + box_weight > max_weight:
+        for items in items_packed:
+            while weight_of_box_contents(items) + box_weight > max_weight:
                 if (weight_of_box_contents(additional_box) +
-                        skus[-1].weight <= max_weight):
-                    additional_box.append(skus.pop())
+                        items[-1].weight <= max_weight):
+                    additional_box.append(items.pop())
                 else:
-                    skus_packed.append(list(additional_box))
-                    additional_box = [skus.pop()]
-        skus_packed.append(additional_box)
+                    items_packed.append(list(additional_box))
+                    additional_box = [items.pop()]
+        items_packed.append(additional_box)
 
     parcel_shipments = []
-    for skus in skus_packed:
-        sku_qty = Counter()
+    for items in items_packed:
+        item_qty = Counter()
         parcel_weight = box_weight
-        for sku in skus:
-            sku_qty[sku.sku_number] += 1
-            parcel_weight += sku.weight
-        parcel_shipments.append({'packed_products': dict(sku_qty),
+        for item in items:
+            item_qty[item.item_number] += 1
+            parcel_weight += item.weight
+        parcel_shipments.append({'packed_products': dict(item_qty),
                                  'total_weight': parcel_weight})
     return parcel_shipments
 
@@ -390,8 +390,8 @@ def compare_1000_times(trials=None):
         results['number_of_parcels'][returned['best_results']] += 1
         # interpret data when there is a tie
         if returned['best_results'] == 'tie':
-            shotput_last_parcel = returned['shotput']['skus_per_parcel'][-1]
-            py_last_parcel = returned['pyshipping']['skus_per_parcel'][-1]
+            shotput_last_parcel = returned['shotput']['items_per_parcel'][-1]
+            py_last_parcel = returned['pyshipping']['items_per_parcel'][-1]
             if shotput_last_parcel > py_last_parcel:
                 winner = 'pyshipping'
                 results['when_tied']['errors'].append(returned)
@@ -446,36 +446,36 @@ def compare_pyshipping_with_shotput():
     from pyshipping import binpack_simple as binpack
     from pyshipping.package import Package
     from time import time
-    skus = []
-    py_skus = []
+    items = []
+    py_items = []
     box_dims = sorted([randint(100, 200), randint(100, 200),
                        randint(100, 200)])
-    num_skus = 500
-    for _ in xrange(num_skus):
-        sku_dims = sorted([randint(20, 100), randint(20, 100),
+    num_items = 500
+    for _ in xrange(num_items):
+        item_dims = sorted([randint(20, 100), randint(20, 100),
                            randint(20, 100)])
-        skus.append(SkuTuple(str(volume(sku_dims)), sku_dims, 0))
-        py_skus.append(Package((sku_dims[0], sku_dims[1], sku_dims[2]), 0))
+        items.append(ItemTuple(str(volume(item_dims)), item_dims, 0))
+        py_items.append(Package((item_dims[0], item_dims[1], item_dims[2]), 0))
     start = time()
-    skus_packed = pack_boxes(box_dims, skus)
+    items_packed = pack_boxes(box_dims, items)
     end = time()
     shotput = {
-        'num_parcels': len(skus_packed),
-        'skus_per_parcel': [len(parcel) for parcel in skus_packed],
+        'num_parcels': len(items_packed),
+        'items_per_parcel': [len(parcel) for parcel in items_packed],
         'time': end - start
     }
     py_box = Package((box_dims[0], box_dims[1], box_dims[2]), 0)
     start = time()
-    py_skus_packed = binpack.packit(py_box, py_skus)
+    py_items_packed = binpack.packit(py_box, py_items)
     end = time()
     pyshipping = {
-        'num_parcels': len(py_skus_packed[0]),
-        'skus_per_parcel': [len(parcel) for parcel in py_skus_packed[0]],
+        'num_parcels': len(py_items_packed[0]),
+        'items_per_parcel': [len(parcel) for parcel in py_items_packed[0]],
         'time': end - start
     }
-    if len(skus_packed) > len(py_skus_packed[0]):
+    if len(items_packed) > len(py_items_packed[0]):
         best_results = 'pyshipping'
-    elif len(skus_packed) < len(py_skus_packed[0]):
+    elif len(items_packed) < len(py_items_packed[0]):
         best_results = 'shotput'
     else:
         best_results = 'tie'

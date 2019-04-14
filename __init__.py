@@ -1,3 +1,1 @@
-from . import views
-
-__all__ = [views]
+from . import usps_shipping

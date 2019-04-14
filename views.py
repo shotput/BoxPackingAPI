@@ -9,7 +9,7 @@ from ..crossdomain import crossdomain
 from ..permissions.decorators import view_requires_team_permission
 
 from .helper import (api_packing_algorithm, compare_1000_times,
-                     how_many_skus_fit, pre_pack_boxes, space_after_packing)
+                     how_many_items_fit, pre_pack_boxes, space_after_packing)
 
 from flask import Blueprint, current_app, jsonify, request
 
@@ -25,11 +25,11 @@ blueprint = Blueprint('box_packing', __name__)
 def get_best_fit():
     '''
     A non-database calling endpoint which is a simple usage of the box packing
-    algorithm which accepts json with skus and a single box.
+    algorithm which accepts json with items and a single box.
 
     Returns:
         'packages': List[Dict[
-            skus_packed: Dict[sku, quantity]
+            items_packed: Dict[item, quantity]
             total_weight: float
     '''
     json_data = request.get_json(force=True)
@@ -42,7 +42,7 @@ def get_best_fit():
         current_app.log.error(e)
         return jsonify(error=msg.missing_value_for(e)), 400
     try:
-        skus_arrangement = pre_pack_boxes(box_info, products_info, options)
+        items_arrangement = pre_pack_boxes(box_info, products_info, options)
     except BoxError as e:
         current_app.log.error(e)
         return jsonify(error=e.message), 400
@@ -60,7 +60,7 @@ def get_best_fit():
     except APIError as e:
         current_app.log.error(e)
         return jsonify(error=e.message), e.status_code
-    return jsonify(packages=skus_arrangement)
+    return jsonify(packages=items_arrangement)
 
 
 @blueprint.route('/box_packing_api/remaining_volume',
@@ -72,7 +72,7 @@ def get_best_fit():
 def get_space_after_packing():
     '''
     Non-database calling endpoint which calculates the remaining volume in a
-    block after packing. Assumes box and sku are of same units
+    block after packing. Assumes box and item are of same units
     Input:
     {
         "box_info": {
@@ -80,7 +80,7 @@ def get_space_after_packing():
             "height": 8,
             "length": 5
         },
-        "sku_info": {
+        "item_info": {
             "width": 9,
             "height": 8,
             "length": 4
@@ -102,9 +102,9 @@ def get_space_after_packing():
     json_data = request.get_json(force=True)
     current_app.log.data(json_data)
     try:
-        sku_info = json_data['product_info']
+        item_info = json_data['product_info']
         box_info = json_data['box_info']
-        space = space_after_packing(sku_info, box_info)
+        space = space_after_packing(item_info, box_info)
     except KeyError as e:
         current_app.log.error(e)
         return jsonify(error=msg.missing_value_for(e.message)), 400
@@ -128,7 +128,7 @@ def get_space_after_packing():
 def how_many_fit():
     '''
     non-database hitting endpoint which calculates the capacity of a box
-    given a sku size. Assumes dimensional units are the same.
+    given a item size. Assumes dimensional units are the same.
     Same inputs as remaining_volume.
     Outputs:
     {
@@ -139,10 +139,10 @@ def how_many_fit():
     json_data = request.get_json(force=True)
     current_app.log.data(json_data)
     try:
-        sku_info = json_data['product_info']
+        item_info = json_data['product_info']
         box_info = json_data['box_info']
         max_packed = json_data.get('max_packed')
-        return jsonify(how_many_skus_fit(sku_info, box_info, max_packed))
+        return jsonify(how_many_items_fit(item_info, box_info, max_packed))
     except KeyError as e:
         current_app.log.error(e)
         return jsonify(error=msg.missing_value_for(e.message)), 400
@@ -186,13 +186,13 @@ def compare_pack():
 @view_requires_team_permission(permissions.box_packing_read)
 def box_packing_api():
     '''
-    a full access endpoint to the box algorithm, which accepts boxes and skus
-    and returns the best box and the skus arrangement
+    a full access endpoint to the box algorithm, which accepts boxes and items
+    and returns the best box and the items arrangement
 
     Outputs:
         Dict[
            'package_contents': List[Dict[
-                packed_prodcuts: Dict[sku, quantity]
+                packed_prodcuts: Dict[item, quantity]
                 total_weight: float
                 box: Dict[
                     weight: float
